@@ -28,6 +28,8 @@ module.exports = async (req, res) => {
     let photo = message?.photo;
     let chat_id = message?.chat.id;
     let text = message?.text;
+    let username = message?.chat?.username;
+    let first_name = message?.chat?.first_name;
 
     if (!message) {
       await sendMessage({
