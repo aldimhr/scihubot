@@ -99,11 +99,12 @@ module.exports = async (req, res) => {
     if (text.includes('https://doi.org') || text.includes('http://doi.org')) {
       console.log('URL INCLUDES DOI');
       // check len url
-      let textlen = text.split(' ');
+      let textlenspace = text.split(' ');
+      let textlenenter = text.split('\n');
 
       console.log({ textlen });
 
-      if (textlen.length > 1) {
+      if (textlenspace.length > 1 || textlenenter > 1) {
         await sendMessage({
           chat_id,
           reply_to_message_id: message.message_id,
