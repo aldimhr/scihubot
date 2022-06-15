@@ -18,10 +18,10 @@ let getFile = async (url) => {
       method: 'get',
       url: `https://sci-hub.se/${url}`,
     }).then((res) => {
-      console.log({ res });
-      console.log({ res: res.data });
       const { document } = new JSDOM(res.data).window;
       let getEl = document.getElementById('pdf');
+
+      console.log({ getEl });
 
       if (!getEl) {
         return {
