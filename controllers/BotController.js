@@ -101,7 +101,7 @@ module.exports = async (req, res) => {
       console.log({ text });
       // check len url
       let textlenspace = text.split(' ');
-      let textlenenter = text.split('\n');
+      let textlenenter = text.toString().split('+');
 
       console.log({ textlenenter, textlenspace });
 
