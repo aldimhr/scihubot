@@ -98,6 +98,7 @@ module.exports = async (req, res) => {
 
     if (text.includes('https://doi.org') || text.includes('http://doi.org')) {
       console.log('URL INCLUDES DOI');
+      console.log({ text });
       // check len url
       let textlenspace = text.split(' ');
       let textlenenter = text.split('\n');
