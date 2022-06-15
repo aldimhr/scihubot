@@ -98,6 +98,17 @@ module.exports = async (req, res) => {
 
     if (text.includes('https://doi.org') || text.includes('http://doi.org')) {
       console.log('URL INCLUDES DOI');
+      // check len url
+      let textlen = text.split(' ').length;
+      if (textlen > 1) {
+        await sendMessage({
+          chat_id,
+          reply_to_message_id: message.message_id,
+          text: 'Please enter the links one by one',
+        });
+
+        return res.send();
+      }
 
       let { message_id } = await sendMessage({
         chat_id,
