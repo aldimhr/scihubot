@@ -101,11 +101,11 @@ module.exports = async (req, res) => {
       console.log({ text });
       // check len url
       let textlenspace = text.split(' ');
-      let textlenenter = text.toString().split('+');
+      let textlenenter = text.split('\n');
 
       console.log({ textlenenter, textlenspace });
 
-      if (textlenspace.length > 1 || textlenenter > 1) {
+      if (textlenspace.length > 1 || textlenenter.length > 1) {
         await sendMessage({
           chat_id,
           reply_to_message_id: message.message_id,
