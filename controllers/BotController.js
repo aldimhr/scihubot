@@ -29,6 +29,15 @@ module.exports = async (req, res) => {
     let chat_id = message?.chat.id;
     let text = message?.text;
 
+    if (!message) {
+      await sendMessage({
+        chat_id: 1392922267,
+        text: 'Null message data',
+      });
+
+      return res.send();
+    }
+
     if (doc || photo) {
       await sendMessage({
         chat_id,
@@ -41,6 +50,11 @@ module.exports = async (req, res) => {
     console.log(message);
 
     if (text === '/start') {
+      await sendMessage({
+        chat_id: 1392922267,
+        text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
+      });
+
       await sendMessage({
         chat_id,
         text: responseMessages.welcome,
