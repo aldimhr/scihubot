@@ -1,10 +1,11 @@
 const { getFile, sendFile, sendMessage, deleteMessage } = require('../helpers');
 
 let responseMessages = {
-  welcome: 'Welcome to Sci-Hub Bot!',
+  welcome:
+    'Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop DOI link below (e.g. https://doi.org/10.1177/193229681300700321)',
   inputLink: `Send the reference link below`,
   wait: '🧑‍🍳 Searching your file...',
-  incorrect: `Please send a valid DOI link below`,
+  incorrect: `Please send a valid DOI link below (e.g. https://doi.org/10.1177/193229681300700321)`,
   support: 'For any question or business inquiries please contact @x0code',
   donation:
     'Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!',
