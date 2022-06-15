@@ -102,7 +102,7 @@ module.exports = async (req, res) => {
       let textlenspace = text.split(' ');
       let textlenenter = text.split('\n');
 
-      console.log({ textlen });
+      console.log({ textlenenter, textlenspace });
 
       if (textlenspace.length > 1 || textlenenter > 1) {
         await sendMessage({
