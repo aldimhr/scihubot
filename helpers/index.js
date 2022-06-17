@@ -10,6 +10,8 @@ const db = require('./database');
 const { BOT_TOKEN } = process.env;
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
+const adminChatId = [519613720, 1392922267];
+
 let getMetaDOI = async (url) => {
   return await axios({
     method: 'get',
@@ -29,10 +31,13 @@ let getMetaDOI = async (url) => {
       }
     })
     .catch(async (err) => {
-      await sendMessage({
-        chat_id: 1392922267,
-        text: `${err}`,
+      adminChatId.forEach(async (chat_id) => {
+        await sendMessage({
+          chat_id,
+          text: err,
+        });
       });
+
       return {
         data: null,
         error: "Unfortunately, Sci-Hub doesn't have the requested document :-(",
@@ -91,9 +96,11 @@ let getFile = async (url) => {
   } catch (err) {
     console.log({ getfile: err });
 
-    await sendMessage({
-      chat_id: 1392922267,
-      text: `ERROR!! \n${err}`,
+    adminChatId.forEach(async (chat_id) => {
+      await sendMessage({
+        chat_id,
+        text: err,
+      });
     });
 
     return { data: null, error: 'Error, please try again' };

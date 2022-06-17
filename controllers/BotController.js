@@ -1,5 +1,7 @@
 const { getFile, sendFile, sendMessage, deleteMessage, getMetaDOI, db } = require('../helpers');
 
+const adminChatId = [519613720, 1392922267];
+
 let responseMessages = {
   welcome: 'Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop your reference link below',
   inputLink: `Send the reference link below`,
@@ -15,9 +17,11 @@ module.exports = async (req, res) => {
     let body = req.body;
 
     if (body.my_chat_member) {
-      await sendMessage({
-        chat_id: 1392922267,
-        text: `Bot has been deleted by ${body.my_chat_member.chat.id}`,
+      adminChatId.forEach(async (chat_id) => {
+        await sendMessage({
+          chat_id,
+          text: `Bot has been deleted by ${body.my_chat_member.chat.id}`,
+        });
       });
 
       return res.send();
@@ -32,9 +36,11 @@ module.exports = async (req, res) => {
     let first_name = message?.chat?.first_name;
 
     if (!message) {
-      await sendMessage({
-        chat_id: 1392922267,
-        text: 'Null message data',
+      adminChatId.forEach(async (chat_id) => {
+        await sendMessage({
+          chat_id,
+          text: 'Null message data',
+        });
       });
 
       return res.send();
@@ -72,14 +78,19 @@ module.exports = async (req, res) => {
           username,
           first_name,
         });
-        await sendMessage({
-          chat_id: 1392922267,
-          text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
+
+        adminChatId.forEach(async (chat_id) => {
+          await sendMessage({
+            chat_id,
+            text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
+          });
         });
       } else if (getUserError) {
-        await sendMessage({
-          chat_id: 1392922267,
-          text: getUserError,
+        adminChatId.forEach(async (chat_id) => {
+          await sendMessage({
+            chat_id,
+            text: getUserError,
+          });
         });
       }
 
@@ -191,9 +202,12 @@ module.exports = async (req, res) => {
     });
   } catch (err) {
     console.log({ err });
-    await sendMessage({
-      chat_id: 1392922267,
-      text: `ERROR!! \n${err}`,
+
+    adminChatId.forEach(async (chat_id) => {
+      await sendMessage({
+        chat_id,
+        text: err,
+      });
     });
   } finally {
     return res.send();
