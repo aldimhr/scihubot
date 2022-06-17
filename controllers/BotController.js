@@ -13,7 +13,43 @@ let responseMessages = {
     'Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!',
 };
 
-//
+const start = async () => {
+  await sendMessage({
+    chat_id,
+    text: responseMessages.welcome,
+    reply_markup: {
+      resize_keyboard: true,
+      keyboard: [['⚓️ Input Link'], ['💰 Donation', '🤠 Support']],
+    },
+  });
+
+  // check user from db
+  let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
+
+  console.log({ getUser, getUserError });
+
+  if (!getUser.length) {
+    let { data: addUser, error: addUserError } = await db.addUser({
+      chat_id,
+      username,
+      first_name,
+    });
+
+    adminChatId.forEach(async (item) => {
+      await sendMessage({
+        chat_id: item,
+        text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
+      });
+    });
+  } else if (getUserError) {
+    adminChatId.forEach(async (item) => {
+      await sendMessage({
+        chat_id: item,
+        text: getUserError,
+      });
+    });
+  }
+};
 
 module.exports = async (req, res) => {
   try {

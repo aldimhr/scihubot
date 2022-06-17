@@ -13,10 +13,8 @@ const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const adminChatId = [519613720, 1392922267];
 
 let getMetaDOI = async (url) => {
-  return await axios({
-    method: 'get',
-    url,
-  })
+  return await axios
+    .get(url)
     .then((res) => {
       const { document } = new JSDOM(res.data).window;
       let getEl = document.querySelector('meta[name="citation_doi"]').content;
@@ -47,10 +45,7 @@ let getFile = async (url) => {
   try {
     console.log('get file');
 
-    let getUrl = await axios({
-      method: 'get',
-      url: `https://sci-hub.se/${url}`,
-    }).then((res) => {
+    let getUrl = await axios.get(`https://sci-hub.ru/${url}`).then((res) => {
       const { document } = new JSDOM(res.data).window;
       let getEl = document.getElementById('pdf');
 
@@ -69,7 +64,7 @@ let getFile = async (url) => {
       if (src.includes('sci-hub')) {
         fileUrl = 'https:' + getEl.src;
       } else {
-        fileUrl = 'https://sci-hub.se' + getEl.src;
+        fileUrl = 'https://sci-hub.ru' + getEl.src;
       }
 
       return { data: fileUrl, error: false };
