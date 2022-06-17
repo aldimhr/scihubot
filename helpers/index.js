@@ -44,10 +44,6 @@ let getMetaDOI = async (url) => {
 
 let getFile = async (url) => {
   try {
-    console.log("get citation");
-    let { data: citationData, error: citationError } = await citation(url);
-    console.log({ citationData, citationError });
-
     console.log("get file");
 
     let getUrl = await axios.get(`https://sci-hub.ru/${url}`).then((res) => {
@@ -89,6 +85,10 @@ let getFile = async (url) => {
     });
 
     console.log({ downloadFile });
+
+    console.log("get citation");
+    let { data: citationData, error: citationError } = await citation(url);
+    console.log({ citationData, citationError });
 
     return { data: downloadFile, citation: citationData, error: false };
   } catch (err) {
