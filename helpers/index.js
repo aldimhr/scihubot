@@ -69,7 +69,7 @@ let getFile = async (url) => {
         fileUrl = 'https://sci-hub.se' + getEl.src;
       }
 
-      return { data: fileUrl, error: null };
+      return { data: fileUrl, error: false };
     });
 
     // console
@@ -87,7 +87,7 @@ let getFile = async (url) => {
 
     console.log({ downloadFile });
 
-    return { data: downloadFile, error: null };
+    return { data: downloadFile, error: false };
   } catch (err) {
     console.log({ getfile: err });
 

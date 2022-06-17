@@ -61,10 +61,27 @@ module.exports = async (req, res) => {
         },
       });
 
-      await sendMessage({
-        chat_id: 1392922267,
-        text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
-      });
+      // check user from db
+      let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
+
+      console.log({ getUser, getUserError });
+
+      if (!getUser.length) {
+        let { data: addUser, error: addUserError } = await db.addUser({
+          chat_id,
+          username,
+          first_name,
+        });
+        await sendMessage({
+          chat_id: 1392922267,
+          text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
+        });
+      } else if (getUserError) {
+        await sendMessage({
+          chat_id: 1392922267,
+          text: getUserError,
+        });
+      }
 
       return res.send();
     }
@@ -123,8 +140,11 @@ module.exports = async (req, res) => {
         const { data, error } = await getFile(text);
         document = data;
         errorMsg = error;
-      } else if (text.includes('doi.org' && !text.includes('http'))) {
-        let linkTarget = 'https://' + text;
+      } else if (text.includes('doi.org') && !text.includes('http')) {
+        let textSplit = text.split('doi.org');
+        let linkTarget = 'https://doi.org' + textSplit[textSplit.length - 1];
+        console.log({ textSplit });
+        console.log({ linkTarget });
         const { data, error } = await getFile(linkTarget);
         document = data;
         errorMsg = error;
