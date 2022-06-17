@@ -109,11 +109,14 @@ const sendFile = async (data) => {
   const formData = new FormData();
   formData.append("chat_id", data.chat_id);
   formData.append("reply_to_message_id", data.message_id);
-  formData.append("caption", data.caption);
   formData.append("document", data.document, {
     filename: `${data.name}`,
     contentType: "multipart/form-data",
   });
+
+  if (data.caption) {
+    formData.append("caption", data.caption);
+  }
 
   return await axios.post(`${TELEGRAM_API}/sendDocument`, formData, {
     headers: formData.getHeaders(),
