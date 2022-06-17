@@ -1,54 +1,16 @@
-const { getFile, sendFile, sendMessage, deleteMessage, getMetaDOI, db } = require('../helpers');
+const { getFile, sendFile, sendMessage, deleteMessage, getMetaDOI, db } = require("../helpers");
 
 const adminChatId = [519613720, 1392922267];
 
 let responseMessages = {
   welcome:
-    'Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop your URL or DOI of the paper you need below',
+    "Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop your URL or DOI of the paper you need below",
   inputLink: ` To get fulltext, send URL or DOI of the paper you need below`,
-  wait: '🧑‍🍳 Searching your file...',
+  wait: "🧑‍🍳 Searching your file...",
   incorrect: `Please send a valid reference URL or DOI below\n\nExample:\n[DOI] https://doi.org/10.1177/193229681300700321\n[PAYWALL] https://www.nature.com/articles/laban.665`,
-  support: 'For any question or business inquiries please contact @x0code',
+  support: "For any question or business inquiries please contact @x0code",
   donation:
-    'Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!',
-};
-
-const start = async () => {
-  await sendMessage({
-    chat_id,
-    text: responseMessages.welcome,
-    reply_markup: {
-      resize_keyboard: true,
-      keyboard: [['⚓️ Input Link'], ['💰 Donation', '🤠 Support']],
-    },
-  });
-
-  // check user from db
-  let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
-
-  console.log({ getUser, getUserError });
-
-  if (!getUser.length) {
-    let { data: addUser, error: addUserError } = await db.addUser({
-      chat_id,
-      username,
-      first_name,
-    });
-
-    adminChatId.forEach(async (item) => {
-      await sendMessage({
-        chat_id: item,
-        text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
-      });
-    });
-  } else if (getUserError) {
-    adminChatId.forEach(async (item) => {
-      await sendMessage({
-        chat_id: item,
-        text: getUserError,
-      });
-    });
-  }
+    "Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!",
 };
 
 module.exports = async (req, res) => {
@@ -78,7 +40,7 @@ module.exports = async (req, res) => {
       adminChatId.forEach(async (item) => {
         await sendMessage({
           chat_id: item,
-          text: 'Null message data',
+          text: "Null message data",
         });
       });
 
@@ -96,13 +58,13 @@ module.exports = async (req, res) => {
       return res.send();
     }
 
-    if (text === '/start') {
+    if (text === "/start") {
       await sendMessage({
         chat_id,
         text: responseMessages.welcome,
         reply_markup: {
           resize_keyboard: true,
-          keyboard: [['⚓️ Input Link'], ['💰 Donation', '🤠 Support']],
+          keyboard: [["⚓️ Input Link"], ["💰 Donation", "🤠 Support"]],
         },
       });
 
@@ -136,7 +98,7 @@ module.exports = async (req, res) => {
       return res.send();
     }
 
-    if (text === '🤠 Support') {
+    if (text === "🤠 Support") {
       await sendMessage({
         chat_id,
         text: responseMessages.support,
@@ -145,7 +107,7 @@ module.exports = async (req, res) => {
       return res.send();
     }
 
-    if (text === '⚓️ Input Link') {
+    if (text === "⚓️ Input Link") {
       await sendMessage({
         chat_id,
         text: responseMessages.inputLink,
@@ -154,7 +116,7 @@ module.exports = async (req, res) => {
       return res.send();
     }
 
-    if (text === '💰 Donation') {
+    if (text === "💰 Donation") {
       await sendMessage({
         chat_id,
         text: responseMessages.donation,
@@ -170,13 +132,13 @@ module.exports = async (req, res) => {
     }
 
     let entities = message?.entities;
-    if (entities && (entities[0]?.type === 'url' || entities[0]?.type === 'text_link')) {
+    if (entities && (entities[0]?.type === "url" || entities[0]?.type === "text_link")) {
       // check len link msg
       if (message?.entities.length > 1) {
         await sendMessage({
           chat_id,
           reply_to_message_id: message.message_id,
-          text: 'Please enter the links one by one',
+          text: "Please enter the links one by one",
         });
 
         return res.send();
@@ -191,19 +153,22 @@ module.exports = async (req, res) => {
 
       let document;
       let errorMsg;
+      let citationApa;
 
-      if (text.includes('https://doi.org') || text.includes('http://doi.org')) {
-        const { data, error } = await getFile(text);
+      if (text.includes("https://doi.org") || text.includes("http://doi.org")) {
+        const { data, error, citation } = await getFile(text);
         document = data;
         errorMsg = error;
-      } else if (text.includes('doi.org') && !text.includes('http')) {
-        let textSplit = text.split('doi.org');
-        let linkTarget = 'https://doi.org' + textSplit[textSplit.length - 1];
+        citationApa = citation;
+      } else if (text.includes("doi.org") && !text.includes("http")) {
+        let textSplit = text.split("doi.org");
+        let linkTarget = "https://doi.org" + textSplit[textSplit.length - 1];
         console.log({ textSplit });
         console.log({ linkTarget });
-        const { data, error } = await getFile(linkTarget);
+        const { data, error, citation } = await getFile(linkTarget);
         document = data;
         errorMsg = error;
+        citationApa = citation;
       } else {
         // get doi from url
         let { data: metaDOIdata, error: metaDOIerror } = await getMetaDOI(text);
@@ -215,9 +180,10 @@ module.exports = async (req, res) => {
           errorMsg = metaDOIerror;
         } else {
           // get file
-          const { data, error } = await getFile(metaDOIdata);
+          const { data, error, citationApa } = await getFile(metaDOIdata);
           document = data;
           errorMsg = error;
+          citationApa = citation;
         }
       }
 
@@ -228,6 +194,7 @@ module.exports = async (req, res) => {
           document,
           chat_id,
           name: `${text}.pdf`,
+          caption: citationApa,
           message_id: message.message_id,
         });
       } else {
