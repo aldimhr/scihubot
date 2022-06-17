@@ -12,6 +12,8 @@ let responseMessages = {
     'Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!',
 };
 
+//
+
 module.exports = async (req, res) => {
   try {
     let body = req.body;
