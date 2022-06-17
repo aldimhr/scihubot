@@ -5,10 +5,40 @@ const { JSDOM } = jsdom;
 require('dotenv').config();
 const FormData = require('form-data');
 
-// const supabase = require('../supabase');
+const db = require('./database');
 
 const { BOT_TOKEN } = process.env;
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+let getMetaDOI = async (url) => {
+  return await axios({
+    method: 'get',
+    url,
+  })
+    .then((res) => {
+      const { document } = new JSDOM(res.data).window;
+      let getEl = document.querySelector('meta[name="citation_doi"]').content;
+
+      if (getEl) {
+        return { data: 'https://doi.org/' + getEl, error: false };
+      } else {
+        return {
+          data: null,
+          error: "Unfortunately, Sci-Hub doesn't have the requested document :-(",
+        };
+      }
+    })
+    .catch(async (err) => {
+      await sendMessage({
+        chat_id: 1392922267,
+        text: `${err}`,
+      });
+      return {
+        data: null,
+        error: "Unfortunately, Sci-Hub doesn't have the requested document :-(",
+      };
+    });
+};
 
 let getFile = async (url) => {
   try {
@@ -21,6 +51,7 @@ let getFile = async (url) => {
       const { document } = new JSDOM(res.data).window;
       let getEl = document.getElementById('pdf');
 
+      // console
       console.log({ getEl });
 
       if (!getEl) {
@@ -41,6 +72,7 @@ let getFile = async (url) => {
       return { data: fileUrl, error: null };
     });
 
+    // console
     console.log({ getUrl });
 
     if (getUrl.error) return getUrl;
@@ -57,12 +89,14 @@ let getFile = async (url) => {
 
     return { data: downloadFile, error: null };
   } catch (err) {
+    console.log({ getfile: err });
+
     await sendMessage({
       chat_id: 1392922267,
       text: `ERROR!! \n${err}`,
     });
 
-    return { data: null, error: err };
+    return { data: null, error: 'Error, please try again' };
   }
 };
 
@@ -92,4 +126,4 @@ const sendMessage = async (options) => {
   return data.result;
 };
 
-module.exports = { getFile, sendFile, deleteMessage, sendMessage };
+module.exports = { getFile, sendFile, deleteMessage, sendMessage, getMetaDOI, db };

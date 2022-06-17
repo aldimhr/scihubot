@@ -1,11 +1,10 @@
-const { getFile, sendFile, sendMessage, deleteMessage } = require('../helpers');
+const { getFile, sendFile, sendMessage, deleteMessage, getMetaDOI, db } = require('../helpers');
 
 let responseMessages = {
-  welcome:
-    'Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop DOI link below\n\n e.g. https://doi.org/10.1177/193229681300700321',
+  welcome: 'Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop your reference link below',
   inputLink: `Send the reference link below`,
   wait: '🧑‍🍳 Searching your file...',
-  incorrect: `Please send a valid DOI link below\n\n e.g. https://doi.org/10.1177/193229681300700321`,
+  incorrect: `Please send a valid reference link below`,
   support: 'For any question or business inquiries please contact @x0code',
   donation:
     'Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!',
@@ -97,16 +96,10 @@ module.exports = async (req, res) => {
       return res.send();
     }
 
-    if (text.includes('https://doi.org') || text.includes('http://doi.org')) {
-      console.log('URL INCLUDES DOI');
-      console.log({ text });
-      // check len url
-      let textlenspace = text.split(' ');
-      let textlenenter = text.split('\n');
-
-      console.log({ textlenenter, textlenspace });
-
-      if (textlenspace.length > 1 || textlenenter.length > 1) {
+    let entities = message?.entities;
+    if (entities && (entities[0]?.type === 'url' || entities[0]?.type === 'text_link')) {
+      // check len link msg
+      if (message?.entities.length > 1) {
         await sendMessage({
           chat_id,
           reply_to_message_id: message.message_id,
@@ -116,31 +109,66 @@ module.exports = async (req, res) => {
         return res.send();
       }
 
+      // wait messsage
       let { message_id } = await sendMessage({
         chat_id,
         reply_to_message_id: message.message_id,
         text: responseMessages.wait,
       });
 
-      const { data: document, error } = await getFile(text);
+      let document;
+      let errorMsg;
+
+      if (text.includes('https://doi.org') || text.includes('http://doi.org')) {
+        const { data, error } = await getFile(text);
+        document = data;
+        errorMsg = error;
+      } else if (text.includes('doi.org' && !text.includes('http'))) {
+        let linkTarget = 'https://' + text;
+        const { data, error } = await getFile(linkTarget);
+        document = data;
+        errorMsg = error;
+      } else {
+        // get doi from url
+        let { data: metaDOIdata, error: metaDOIerror } = await getMetaDOI(text);
+
+        console.log({ metaDOIdata, metaDOIerror });
+
+        if (metaDOIerror) {
+          document = null;
+          errorMsg = metaDOIerror;
+        } else {
+          // get file
+          const { data, error } = await getFile(metaDOIdata);
+          document = data;
+          errorMsg = error;
+        }
+      }
 
       await deleteMessage({ chat_id, message_id });
 
-      if (!error) {
-        await sendFile({ document, chat_id, name: `${text}.pdf`, message_id: message.message_id });
+      if (!errorMsg) {
+        await sendFile({
+          document,
+          chat_id,
+          name: `${text}.pdf`,
+          message_id: message.message_id,
+        });
       } else {
         await sendMessage({
           chat_id,
           reply_to_message_id: message.message_id,
-          text: error,
+          text: errorMsg,
         });
       }
-    } else {
-      await sendMessage({
-        chat_id,
-        text: responseMessages.incorrect,
-      });
+
+      return res.send();
     }
+
+    await sendMessage({
+      chat_id,
+      text: responseMessages.incorrect,
+    });
   } catch (err) {
     console.log({ err });
     await sendMessage({
