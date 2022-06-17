@@ -40,6 +40,8 @@ module.exports = async (req, res) => {
       return res.send();
     }
 
+    console.log(message);
+
     if (doc || photo) {
       await sendMessage({
         chat_id,
@@ -49,14 +51,7 @@ module.exports = async (req, res) => {
       return res.send();
     }
 
-    console.log(message);
-
     if (text === '/start') {
-      await sendMessage({
-        chat_id: 1392922267,
-        text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
-      });
-
       await sendMessage({
         chat_id,
         text: responseMessages.welcome,
@@ -64,6 +59,11 @@ module.exports = async (req, res) => {
           resize_keyboard: true,
           keyboard: [['⚓️ Input Link'], ['💰 Donation', '🤠 Support']],
         },
+      });
+
+      await sendMessage({
+        chat_id: 1392922267,
+        text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
       });
 
       return res.send();
