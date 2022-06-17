@@ -31,11 +31,9 @@ let getMetaDOI = async (url) => {
       }
     })
     .catch(async (err) => {
-      adminChatId.forEach(async (item) => {
-        await sendMessage({
-          chat_id: item,
-          text: err,
-        });
+      await sendMessage({
+        chat_id: 1392922267,
+        text: `Input: ${url}\n\n${err}`,
       });
 
       return {
