@@ -6,7 +6,7 @@ let responseMessages = {
   welcome: 'Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop your reference link below',
   inputLink: `Send the reference link below`,
   wait: '🧑‍🍳 Searching your file...',
-  incorrect: `Please send a valid reference link below\nExample:\nhttps://doi.org/10.1177/193229681300700321\nhttps://www.nature.com/articles/laban.665`,
+  incorrect: `Please send a valid reference link below\n\nExample:\nhttps://doi.org/10.1177/193229681300700321\nhttps://www.nature.com/articles/laban.665`,
   support: 'For any question or business inquiries please contact @x0code',
   donation:
     'Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!',
