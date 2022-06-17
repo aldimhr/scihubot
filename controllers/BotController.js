@@ -17,9 +17,9 @@ module.exports = async (req, res) => {
     let body = req.body;
 
     if (body.my_chat_member) {
-      adminChatId.forEach(async (chat_id) => {
+      adminChatId.forEach(async (item) => {
         await sendMessage({
-          chat_id,
+          chat_id: item,
           text: `Bot has been deleted by ${body.my_chat_member.chat.id}`,
         });
       });
@@ -36,9 +36,9 @@ module.exports = async (req, res) => {
     let first_name = message?.chat?.first_name;
 
     if (!message) {
-      adminChatId.forEach(async (chat_id) => {
+      adminChatId.forEach(async (item) => {
         await sendMessage({
-          chat_id,
+          chat_id: item,
           text: 'Null message data',
         });
       });
@@ -79,16 +79,16 @@ module.exports = async (req, res) => {
           first_name,
         });
 
-        adminChatId.forEach(async (chat_id) => {
+        adminChatId.forEach(async (item) => {
           await sendMessage({
-            chat_id,
+            chat_id: item,
             text: `\nNew user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`,
           });
         });
       } else if (getUserError) {
-        adminChatId.forEach(async (chat_id) => {
+        adminChatId.forEach(async (item) => {
           await sendMessage({
-            chat_id,
+            chat_id: item,
             text: getUserError,
           });
         });
@@ -121,6 +121,12 @@ module.exports = async (req, res) => {
         text: responseMessages.donation,
       });
 
+      adminChatId.forEach(async (item) => {
+        await sendMessage({
+          chat_id: item,
+          text: `Someone see donation\nChat id: ${chat_id}`,
+        });
+      });
       return res.send();
     }
 
@@ -203,9 +209,9 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.log({ err });
 
-    adminChatId.forEach(async (chat_id) => {
+    adminChatId.forEach(async (item) => {
       await sendMessage({
-        chat_id,
+        chat_id: item,
         text: err,
       });
     });

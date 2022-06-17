@@ -31,9 +31,9 @@ let getMetaDOI = async (url) => {
       }
     })
     .catch(async (err) => {
-      adminChatId.forEach(async (chat_id) => {
+      adminChatId.forEach(async (item) => {
         await sendMessage({
-          chat_id,
+          chat_id: item,
           text: err,
         });
       });
@@ -96,9 +96,9 @@ let getFile = async (url) => {
   } catch (err) {
     console.log({ getfile: err });
 
-    adminChatId.forEach(async (chat_id) => {
+    adminChatId.forEach(async (item) => {
       await sendMessage({
-        chat_id,
+        chat_id: item,
         text: err,
       });
     });
