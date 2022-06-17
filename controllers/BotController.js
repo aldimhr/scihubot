@@ -180,7 +180,7 @@ module.exports = async (req, res) => {
           errorMsg = metaDOIerror;
         } else {
           // get file
-          const { data, error, citationApa } = await getFile(metaDOIdata);
+          const { data, error, citation } = await getFile(metaDOIdata);
           document = data;
           errorMsg = error;
           citationApa = citation;
