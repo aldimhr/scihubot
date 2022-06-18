@@ -101,7 +101,8 @@ let getFile = async (url) => {
       });
     });
 
-    return { data: null, error: "Error, please try again" };
+    // return { data: null, error: "Error, please try again" };
+    return { data: null, error: "UNDER MAINTENANCE" };
   }
 };
 
