@@ -12,6 +12,8 @@ module.exports = async (url, puppeteer) => {
     const { document } = new JSDOM(scihubPage).window;
     let getDownloadURL = document.getElementById("pdf");
 
+    if (!getDownloadURL) console.log({ SCIHUBDATA: scihubPage });
+
     if (!getDownloadURL) return { data: null, error: errMessage };
 
     if (getDownloadURL.src.includes("sci-hub")) {
