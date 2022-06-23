@@ -3,14 +3,44 @@ const { getFile, sendFile, sendMessage, deleteMessage, getMetaDOI, db } = requir
 const adminChatId = [519613720, 1392922267];
 
 let responseMessages = {
-  welcome:
-    "Welcome to Sci-Hub Bot!\n\nHow it works? Simply drop your URL or DOI of the paper you need below",
-  inputLink: ` To get fulltext, send URL or DOI of the paper you need below`,
-  wait: "🧑‍🍳 Searching your file...",
-  incorrect: `Please send a valid reference URL or DOI below\n\nExample:\n[DOI] https://doi.org/10.1177/193229681300700321\n[PAYWALL] https://www.nature.com/articles/laban.665`,
+  welcome: `
+Welcome to Sci-Hub Bot!
+
+How it works? Simply drop the DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, by DOI Path etc.)
+
+Example:
+[DOI-URL] https://doi.org/10.1177/193229681300700321
+[DOI-PATH] /kw 10.1177/193229681300700321
+[PUBLISHER] https://www.nature.com/articles/laban.665
+[KEYWORD] /kw computer science
+
+Subscribe:
+@x0projects`,
+
+  inputLink: `
+Send me the DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, by DOI path etc.)
+
+Example
+
+[DOI URL] https://doi.org/10.1177/193229681300700321
+[DOI PATH] /kw 10.1177/193229681300700321
+[PUBLISHER] https://www.nature.com/articles/laban.665
+[KEYWORD] /kw computer science
+
+Subscribe:
+@x0projects`,
+  donation: `
+Your support matters. This project survives on the kindness & generosity of your contributions.
+
+https://www.buymeacoffee.com/x0code
+[BTC]
+[ETH] 0xC4cB89575A39Cb1A7066BB855B4FdA5Ce3cEE64a
+[BSC] 0xC4cB89575A39Cb1A7066BB855B4FdA5Ce3cEE64a
+
+Thankyou!`,
+  incorrect: ` To get fulltext, send URL or DOI of the paper you need below`,
   support: "For any question or business inquiries please contact @x0code",
-  donation:
-    "Your support matters. This project survives on the kindness & generosity of your contributions.\n\n☕ https://www.buymeacoffee.com/x0code \n\nThankyou!",
+  wait: "🕵‍♀️ Searching your file...",
 };
 
 module.exports = async (req, res) => {

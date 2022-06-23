@@ -1,14 +1,14 @@
-const axios = require('axios');
-const jsdom = require('jsdom');
+const axios = require("axios");
+const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
 let getFile = async (url) => {
   let getUrl = await axios({
-    method: 'get',
-    url: 'url',
+    method: "get",
+    url,
   }).then((res) => {
     const { document } = new JSDOM(res.data).window;
-    let fileUrl = 'https:' + document.getElementById('pdf').src;
+    let fileUrl = "https:" + document.getElementById("pdf").src;
 
     if (!fileUrl)
       return {
@@ -22,9 +22,9 @@ let getFile = async (url) => {
   if (getUrl.error) return getUrl;
 
   let downloadFile = await axios({
-    method: 'get',
+    method: "get",
     url: getUrl,
-    responseType: 'arraybuffer',
+    responseType: "arraybuffer",
   }).then((res) => {
     return res.data;
   });

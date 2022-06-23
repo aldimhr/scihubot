@@ -1,155 +1,55 @@
-const axios = require("axios");
+require("dotenv").config();
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-require("dotenv").config();
-const FormData = require("form-data");
-
 const db = require("./database");
 const citation = require("./citation");
+const request = require("./request");
+const page = require("./page");
+const libraryGenesis = require("./libraryGenesis");
+const sciHub = require("./sciHub");
+const downloadFile = require("./downloadFile");
+const errorHandler = require("./errorHandler");
 
-const { BOT_TOKEN } = process.env;
-const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const errMsg = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
-const adminChatId = [519613720, 1392922267];
+const sendMessageAdmin = async (ctx, msg) => {
+  ctx.telegram.sendMessage(519613720, msg);
+  ctx.telegram.sendMessage(1392922267, msg);
+};
 
-let getMetaDOI = async (url) => {
-  return await axios
+let getMetaDOI = async (url, ctx) => {
+  return await request
     .get(url)
     .then((res) => {
-      const { document } = new JSDOM(res.data).window;
-      let getEl = document.querySelector('meta[name="citation_doi"]').content;
+      const { document } = new JSDOM(res).window;
+      let citationDOI =
+        document.querySelector('meta[property="citation_doi"]')?.content ||
+        document.querySelector('meta[name="citation_doi"]')?.content;
+      console.log({ citationDOI });
 
-      if (getEl) {
-        return { data: "https://doi.org/" + getEl, error: false };
-      } else {
-        return {
-          data: null,
-          error: "Unfortunately, Sci-Hub doesn't have the requested document :-(",
-        };
+      if (citationDOI) {
+        return { data: "https://doi.org/" + citationDOI, error: false };
       }
+
+      return { data: null, error: errMsg };
     })
     .catch(async (err) => {
-      await sendMessage({
-        chat_id: 1392922267,
-        text: `Input: ${url}\n\n${err}`,
-      });
-
-      return {
-        data: null,
-        error: "Unfortunately, Sci-Hub doesn't have the requested document :-(",
-      };
+      console.log({ getMetaDOI: `ERR:helpers/index.js/getMetaDoi()\n${err}` });
+      ctx.telegram.sendMessage(1392922267, `Input: ${url}\n\n${err}`);
+      return { data: null, error: errMsg };
     });
 };
 
-let getFile = async (url) => {
-  try {
-    console.log("get file");
-
-    let getUrl = await axios.get(`https://sci-hub.ru/${url}`).then((res) => {
-      const { document } = new JSDOM(res.data).window;
-      let getEl = document.getElementById("pdf");
-
-      // console
-      console.log({ getEl });
-
-      if (!getEl) {
-        return {
-          data: null,
-          error: "Unfortunately, Sci-Hub doesn't have the requested document :-(",
-        };
-      }
-
-      let src = getEl.src;
-      let fileUrl;
-      if (src.includes("sci-hub")) {
-        fileUrl = "https:" + getEl.src;
-      } else {
-        fileUrl = "https://sci-hub.ru" + getEl.src;
-      }
-
-      return { data: fileUrl, error: false };
-    });
-
-    // console
-    console.log({ getUrl });
-
-    if (getUrl.error) return getUrl;
-
-    let downloadFile = await axios({
-      method: "get",
-      url: getUrl.data,
-      responseType: "arraybuffer",
-    }).then((res) => {
-      return res.data;
-    });
-
-    console.log({ downloadFile });
-
-    console.log("get citation");
-    let { data: citationData, error: citationError } = await citation(url);
-    console.log({ citationData, citationError });
-
-    return { data: downloadFile, citation: citationData, error: false };
-  } catch (err) {
-    console.log({ getfile: err });
-    if (err.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.log(err.response.data);
-      console.log(err.response.status);
-      console.log(err.response.headers);
-    } else if (err.request) {
-      // The request was made but no response was received
-      // `err.request` is an instance of XMLHttpRequest in the browser and an instance of
-      // http.ClientRequest in node.js
-      console.log(err.request);
-    } else {
-      // Something happened in setting up the request that triggered an err
-      console.log("err", err.message);
-    }
-    console.log(err.config);
-
-    adminChatId.forEach(async (item) => {
-      await sendMessage({
-        chat_id: item,
-        text: err,
-      });
-    });
-
-    // return { data: null, error: "Error, please try again" };
-    return { data: null, error: "UNDER MAINTENANCE" };
-  }
+module.exports = {
+  sendMessageAdmin,
+  libraryGenesis,
+  downloadFile,
+  errorHandler,
+  getMetaDOI,
+  citation,
+  request,
+  sciHub,
+  page,
+  db,
 };
-
-const sendFile = async (data) => {
-  const formData = new FormData();
-  formData.append("chat_id", data.chat_id);
-  formData.append("reply_to_message_id", data.message_id);
-  formData.append("document", data.document, {
-    filename: `${data.name}`,
-    contentType: "multipart/form-data",
-  });
-
-  if (data.caption) {
-    formData.append("caption", data.caption);
-  }
-
-  return await axios.post(`${TELEGRAM_API}/sendDocument`, formData, {
-    headers: formData.getHeaders(),
-  });
-};
-
-const deleteMessage = async (options) => {
-  const { data } = await axios.post(`${TELEGRAM_API}/deleteMessage`, options);
-
-  return data;
-};
-
-const sendMessage = async (options) => {
-  const { data } = await axios.post(`${TELEGRAM_API}/sendMessage`, options);
-
-  return data.result;
-};
-
-module.exports = { getFile, sendFile, deleteMessage, sendMessage, getMetaDOI, db };

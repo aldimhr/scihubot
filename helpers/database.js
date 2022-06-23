@@ -1,19 +1,20 @@
-const supabase = require('../supabase');
+require("dotenv").config();
+const supabase = require("../supabase");
 
 const getUsers = async () => {
-  let { data, error } = await supabase.from('scihub_user').select('*');
+  let { data, error } = await supabase.from(process.env.SUPA_TABLE).select("*");
 
   return { data, error };
 };
 
 const getUser = async (opt) => {
-  let { data, error } = await supabase.from('scihub_user').select('*').match(opt);
+  let { data, error } = await supabase.from(process.env.SUPA_TABLE).select("*").match(opt);
 
   return { data, error };
 };
 
-const addUser = async ({ chat_id, username, first_name, permission = 'user' }) => {
-  const { data, error } = await supabase.from('scihub_user').insert([
+const addUser = async ({ chat_id, username, first_name, permission = "user" }) => {
+  const { data, error } = await supabase.from(process.env.SUPA_TABLE).insert([
     {
       chat_id: chat_id.toString(),
       username: username ? username.toString() : undefined,
@@ -27,9 +28,9 @@ const addUser = async ({ chat_id, username, first_name, permission = 'user' }) =
 
 const getAdmin = async () => {
   let { data, error } = await supabase
-    .from('scihub_user')
-    .select('*')
-    .match({ permission: 'admin' });
+    .from(process.env.SUPA_TABLE)
+    .select("*")
+    .match({ permission: "admin" });
 
   return { data, error };
 };
