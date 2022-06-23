@@ -37,7 +37,6 @@ let getMetaDOI = async (url, ctx) => {
 };
 
 module.exports = {
-  sendMessageAdmin,
   libraryGenesis,
   downloadFile,
   errorHandler,
