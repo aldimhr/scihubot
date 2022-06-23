@@ -225,7 +225,9 @@ bot.entity(["url", "text_link"], async (ctx) => {
 
     console.log({ fileURL, errorGettingFile });
     if (errorGettingFile) {
-      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(");
+      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+        reply_to_message_id: message.message_id,
+      });
       return await ctx.telegram.deleteMessage(chat_id, message_id);
     }
 
@@ -233,7 +235,9 @@ bot.entity(["url", "text_link"], async (ctx) => {
     const dFile = await downloadFile(fileURL);
     console.log({ dFile });
     if (dFile.error) {
-      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(");
+      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+        reply_to_message_id: message.message_id,
+      });
       return await ctx.telegram.deleteMessage(chat_id, message_id);
     }
 
@@ -244,7 +248,9 @@ bot.entity(["url", "text_link"], async (ctx) => {
     // delete wait message
     await ctx.telegram.deleteMessage(chat_id, message_id);
     if (errorGettingFile) {
-      return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(");
+      return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+        reply_to_message_id: message.message_id,
+      });
     }
 
     // send file to user
