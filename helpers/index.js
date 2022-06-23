@@ -13,11 +13,6 @@ const errorHandler = require("./errorHandler");
 
 const errMsg = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
-const sendMessageAdmin = async (ctx, msg) => {
-  ctx.telegram.sendMessage(519613720, msg);
-  ctx.telegram.sendMessage(1392922267, msg);
-};
-
 let getMetaDOI = async (url, ctx) => {
   return await request
     .get(url)

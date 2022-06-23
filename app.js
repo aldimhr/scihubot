@@ -12,15 +12,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 const adminChatId = [519613720, 1392922267];
 
-const {
-  sendMessageAdmin,
-  downloadFile,
-  citation,
-  sciHub,
-  getMetaDOI,
-  db,
-  errorHandler,
-} = require("./helpers");
+const { downloadFile, citation, sciHub, getMetaDOI, db, errorHandler } = require("./helpers");
 
 let keyboardMessage = {
   default: [["⚓️ Search Document"], ["💰 Donation", "🤠 Support"]],
