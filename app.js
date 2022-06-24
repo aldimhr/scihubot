@@ -4,7 +4,7 @@
 [v] Add crypto address for donation
 [v] Fixing error
 [ ] Send error message to admin for monitoring
-
+[ ] 403 forbidden / blocked ip / ddos-guard
 */
 require("dotenv").config();
 const { Telegraf } = require("telegraf");
@@ -97,35 +97,37 @@ bot.use(async (ctx, next) => {
     if (ctx?.message) {
       console.log(ctx?.message);
 
-      // let chat_id = ctx.message?.chat.id;
-      // let username = ctx.message?.chat?.username;
-      // let first_name = ctx.message?.chat?.first_name;
+      let chat_id = ctx.message?.chat.id;
+      let username = ctx.message?.chat?.username;
+      let first_name = ctx.message?.chat?.first_name;
 
-      // if (ctx.message.text === "/start") {
-      //   // get user from db
-      //   let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
+      if (ctx.message.text === "/start") {
+        // get user from db
+        let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
 
-      //   console.log({ getUser, getUserError });
+        console.log({ getUser, getUserError });
 
-      //   if (!getUser.length) {
-      //     // add user from db
-      //     await db.addUser({
-      //       chat_id,
-      //       username,
-      //       first_name,
-      //     });
+        if (!getUser.length) {
+          // add user from db
+          await db.addUser({
+            chat_id,
+            username,
+            first_name,
+          });
 
-      //     // notify admin
-      //     adminChatId.forEach((item) => {
-      //       ctx.telegram.sendMessage(
-      //         item,
-      //         `New user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`
-      //       );
-      //     });
-      //   }
-      // }
-      // ctx.reply("THIS BOT UNDER MAINTENANCE");
-      // return;
+          // notify admin
+          adminChatId.forEach((item) => {
+            ctx.telegram.sendMessage(
+              item,
+              `New user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`
+            );
+          });
+        }
+      }
+      ctx.reply(
+        "THIS BOT UNDER MAINTENANCE\n\nSubscribe to @x0projects for the latest information"
+      );
+      return;
     } else if (ctx?.update?.my_chat_member) {
       console.log(ctx?.update.my_chat_member);
     } else {
