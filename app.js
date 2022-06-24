@@ -93,6 +93,7 @@ bot.use(async (ctx, next) => {
     } else {
       console.log({ ctx });
     }
+    //
 
     // bot has been deleted by user
     if (ctx.update.my_chat_member) {
