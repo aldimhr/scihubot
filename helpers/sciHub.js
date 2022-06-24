@@ -7,7 +7,7 @@ module.exports = async (url, puppeteer) => {
   console.log("SCIHUB");
 
   try {
-    scihubPage = await request.get(`https://sci-hub.se/${url}`);
+    scihubPage = await request.get(`https://sci-hub.se/${url}`, true);
 
     const { document } = new JSDOM(scihubPage).window;
     let getDownloadURL = document.getElementById("pdf");

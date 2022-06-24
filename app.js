@@ -88,6 +88,8 @@ bot.use(async (ctx, next) => {
     // print to console
     if (ctx?.message) {
       console.log(ctx?.message);
+      ctx.reply("THIS BOT UNDER MAINTENANCE");
+      return;
     } else if (ctx?.update?.my_chat_member) {
       console.log(ctx?.update.my_chat_member);
     } else {
