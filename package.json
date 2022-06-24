@@ -23,7 +23,8 @@
     "puppeteer": "^14.4.1",
     "puppeteer-extra": "^3.3.0",
     "puppeteer-extra-plugin-stealth": "^2.10.1",
-    "telegraf": "^4.8.5"
+    "telegraf": "^4.8.5",
+    "user-agents": "^1.0.1056"
   },
   "devDependencies": {
     "jest": "^28.1.1"

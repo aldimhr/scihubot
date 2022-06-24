@@ -1,11 +1,12 @@
 const Puppeteer = require("puppeteer-extra");
 const Puppeteer_Stealth = require("puppeteer-extra-plugin-stealth");
+const UserAgent = require("user-agents");
+const userAgent = new UserAgent({ deviceCategory: "desktop" });
 
 Puppeteer.default.use(Puppeteer_Stealth());
 
 async function get(url, headers = "", useragent = "") {
   const browser = await Puppeteer.default.launch({
-    headless: false,
     args: [
       "--start-maximized",
       "--headless",
@@ -30,7 +31,8 @@ async function get(url, headers = "", useragent = "") {
     if (useragent) {
       await page.setUserAgent(useragent);
     } else {
-      await page.setUserAgent("Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0");
+      // await page.setUserAgent("Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0");
+      await page.setUserAgent(userAgent.toString());
     }
 
     await page.goto(url, { waitUntil: "load" });
