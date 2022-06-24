@@ -14,6 +14,7 @@ module.exports = async (url) => {
   let urls = [];
   try {
     let libgenpage = await request.get(`https://libgen.rs/scimag/?q=${url}`);
+    console.log({ libgenpage });
 
     // filter html
     const { document } = new JSDOM(libgenpage).window;
@@ -28,6 +29,8 @@ module.exports = async (url) => {
 
     // filter html
     const libgenhtml = new JSDOM(libgendownload).window.document;
+    console.log({ libgenhtml });
+
     let libgenhtmlselector = libgenhtml.querySelectorAll("a");
     libgenhtmlselector.forEach((item) => {
       if (item.href.includes("get.php?md5=")) url = item.href;
