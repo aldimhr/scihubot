@@ -12,9 +12,11 @@ module.exports = async (url, puppeteer) => {
     const { document } = new JSDOM(scihubPage).window;
     let getDownloadURL = document.getElementById("pdf");
 
-    if (!getDownloadURL) console.log({ SCIHUBDATA: scihubPage });
-
-    if (!getDownloadURL) return { data: null, error: errMessage };
+    if (!getDownloadURL) {
+      let smile = document.getElementById("smile");
+      if (!smile) console.log({ SCIHUBDATA: scihubPage });
+      return { data: null, error: errMessage };
+    }
 
     if (getDownloadURL.src.includes("sci-hub")) {
       return { data: "https:" + getDownloadURL.src, error: false };

@@ -3,7 +3,7 @@
 [v] Search using keyword
 [v] Add crypto address for donation
 [v] Fixing error
-[v]
+[ ] Send error message to admin for monitoring
 
 */
 require("dotenv").config();
@@ -84,6 +84,15 @@ bot.use(async (ctx, next) => {
   console.log("====================================================");
   try {
     let err = false;
+
+    // print to console
+    if (ctx?.message) {
+      console.log(ctx?.message);
+    } else if (ctx?.update?.my_chat_member) {
+      console.log(ctx?.update.my_chat_member);
+    } else {
+      console.log({ ctx });
+    }
 
     // bot has been deleted by user
     if (ctx.update.my_chat_member) {
@@ -179,7 +188,6 @@ bot.entity(["url", "text_link"], async (ctx) => {
     let text = message?.text;
     let chat_id = message?.chat.id;
     let entities = message?.entities;
-    console.log({ message });
 
     // if many links in one message
     if (entities.length > 1) {
