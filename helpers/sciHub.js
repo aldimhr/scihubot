@@ -23,6 +23,7 @@ module.exports = async (url, puppeteer) => {
     }
 
     return { data: "https://sci-hub.ru" + getDownloadURL.src, error: false };
+    // return { data: "https://us.hidester.com" + getDownloadURL.src, error: false };
   } catch (err) {
     console.log({ "scihub.js": err });
     return {

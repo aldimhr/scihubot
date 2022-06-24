@@ -35,19 +35,19 @@ async function get(url, headers = "", useragent = "") {
       await page.setUserAgent(userAgent.toString());
     }
 
-    // await page.goto(url, { waitUntil: "load" });
-    await page.goto("https://hidester.com/proxy/#", { waitUntil: "load" });
+    await page.goto(url, { waitUntil: "load" });
+    // await page.goto("https://hidester.com/proxy/#", { waitUntil: "load" });
 
-    // input
-    await page.waitForSelector("#input");
-    await page.focus("#input");
-    await page.keyboard.type(url, { delay: 200 });
+    // // input
+    // await page.waitForSelector("#input");
+    // await page.focus("#input");
+    // await page.keyboard.type(url, { delay: 200 });
 
-    // submit
-    let [submit] = await page.$x('//*[@id="hidester-form"]/div/div[2]/input[3]');
-    await submit.click();
+    // // submit
+    // let [submit] = await page.$x('//*[@id="hidester-form"]/div/div[2]/input[3]');
+    // await submit.click();
 
-    await page.waitForNavigation({ waitUntil: "load" });
+    // await page.waitForNavigation({ waitUntil: "load" });
 
     return await page.content();
   } catch (err) {
