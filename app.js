@@ -88,6 +88,29 @@ bot.use(async (ctx, next) => {
     // print to console
     if (ctx?.message) {
       console.log(ctx?.message);
+      if (ctx.message.text === "/start") {
+        // get user from db
+        let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
+
+        console.log({ getUser, getUserError });
+
+        if (!getUser.length) {
+          // add user from db
+          await db.addUser({
+            chat_id,
+            username,
+            first_name,
+          });
+
+          // notify admin
+          adminChatId.forEach((item) => {
+            ctx.telegram.sendMessage(
+              item,
+              `New user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`
+            );
+          });
+        }
+      }
       ctx.reply("THIS BOT UNDER MAINTENANCE");
       return;
     } else if (ctx?.update?.my_chat_member) {
