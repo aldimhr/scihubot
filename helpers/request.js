@@ -1,7 +1,7 @@
 const Puppeteer = require("puppeteer-extra");
 const Puppeteer_Stealth = require("puppeteer-extra-plugin-stealth");
 const UserAgent = require("user-agents");
-const userAgent = new UserAgent({ deviceCategory: "desktop" });
+const userAgent = new UserAgent([/Chrome/, { deviceCategory: "desktop" }]);
 
 Puppeteer.use(Puppeteer_Stealth());
 
