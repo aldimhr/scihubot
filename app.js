@@ -12,7 +12,15 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 const adminChatId = [519613720, 1392922267];
 
-const { downloadFile, citation, sciHub, getMetaDOI, db, errorHandler } = require("./helpers");
+const {
+  downloadFile,
+  citation,
+  sciHub,
+  getMetaDOI,
+  db,
+  errorHandler,
+  libraryGenesis,
+} = require("./helpers");
 
 let keyboardMessage = {
   default: [["⚓️ Search Document"], ["💰 Donation", "🤠 Support"]],
@@ -87,35 +95,37 @@ bot.use(async (ctx, next) => {
 
     // print to console
     if (ctx?.message) {
-      let chat_id = ctx.message?.chat.id;
-      let username = ctx.message?.chat?.username;
-      let first_name = ctx.message?.chat?.first_name;
       console.log(ctx?.message);
-      if (ctx.message.text === "/start") {
-        // get user from db
-        let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
 
-        console.log({ getUser, getUserError });
+      // let chat_id = ctx.message?.chat.id;
+      // let username = ctx.message?.chat?.username;
+      // let first_name = ctx.message?.chat?.first_name;
 
-        if (!getUser.length) {
-          // add user from db
-          await db.addUser({
-            chat_id,
-            username,
-            first_name,
-          });
+      // if (ctx.message.text === "/start") {
+      //   // get user from db
+      //   let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
 
-          // notify admin
-          adminChatId.forEach((item) => {
-            ctx.telegram.sendMessage(
-              item,
-              `New user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`
-            );
-          });
-        }
-      }
-      ctx.reply("THIS BOT UNDER MAINTENANCE");
-      return;
+      //   console.log({ getUser, getUserError });
+
+      //   if (!getUser.length) {
+      //     // add user from db
+      //     await db.addUser({
+      //       chat_id,
+      //       username,
+      //       first_name,
+      //     });
+
+      //     // notify admin
+      //     adminChatId.forEach((item) => {
+      //       ctx.telegram.sendMessage(
+      //         item,
+      //         `New user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`
+      //       );
+      //     });
+      //   }
+      // }
+      // ctx.reply("THIS BOT UNDER MAINTENANCE");
+      // return;
     } else if (ctx?.update?.my_chat_member) {
       console.log(ctx?.update.my_chat_member);
     } else {
@@ -234,14 +244,16 @@ bot.entity(["url", "text_link"], async (ctx) => {
     let doi = text;
     if (text.includes("://doi.org/") && text.includes("http")) {
       // get file link
-      await sciHub(text).then(({ data, error }) => {
+      // await sciHub(text).then(({ data, error }) => {
+      await libraryGenesis(text).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
     } else if (text.includes("doi.org/") && !text.includes("http")) {
       doi = `https://${text}`;
       // add http
-      await sciHub(`https://${text}`).then(({ data, error }) => {
+      // await sciHub(`https://${text}`).then(({ data, error }) => {
+      await libraryGenesis(`https://${text}`).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
@@ -252,7 +264,8 @@ bot.entity(["url", "text_link"], async (ctx) => {
 
         if (data) {
           doi = data;
-          await sciHub(data).then(({ data, error }) => {
+          // await sciHub(data).then(({ data, error }) => {
+          await libraryGenesis(data).then(({ data, error }) => {
             fileURL = data;
             errorGettingFile = error;
           });
