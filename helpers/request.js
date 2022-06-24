@@ -3,10 +3,10 @@ const Puppeteer_Stealth = require("puppeteer-extra-plugin-stealth");
 const UserAgent = require("user-agents");
 const userAgent = new UserAgent({ deviceCategory: "desktop" });
 
-Puppeteer.default.use(Puppeteer_Stealth());
+Puppeteer.use(Puppeteer_Stealth());
 
 async function get(url, headers = "", useragent = "") {
-  const browser = await Puppeteer.default.launch({
+  const browser = await Puppeteer.launch({
     args: [
       "--start-maximized",
       "--headless",
