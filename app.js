@@ -87,6 +87,9 @@ bot.use(async (ctx, next) => {
 
     // print to console
     if (ctx?.message) {
+      let chat_id = ctx.message?.chat.id;
+      let username = ctx.message?.chat?.username;
+      let first_name = ctx.message?.chat?.first_name;
       console.log(ctx?.message);
       if (ctx.message.text === "/start") {
         // get user from db
