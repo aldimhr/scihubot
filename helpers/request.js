@@ -5,6 +5,7 @@ Puppeteer.default.use(Puppeteer_Stealth());
 
 async function get(url, headers = "", useragent = "") {
   const browser = await Puppeteer.default.launch({
+    headless: false,
     args: [
       "--start-maximized",
       "--headless",
