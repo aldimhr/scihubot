@@ -140,7 +140,7 @@ bot.use(async (ctx, next) => {
       adminChatId.forEach(async (item) => {
         ctx.telegram.sendMessage(
           item,
-          `${responseMessages.delete} ${ctx.update.my_chat_member.chat.id}`
+          `${responseMessages.delete} ${ctx.update.my_chat_member.chat.id}...`
         );
       });
 
