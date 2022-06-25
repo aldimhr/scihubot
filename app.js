@@ -85,6 +85,7 @@ https://www.buymeacoffee.com/x0code
 Thankyou!`,
   support: "For any question or business inquiries please contact @x0code",
   wait: "🕵‍♀️ Searching your file...",
+  null: "null message",
 };
 
 // middleware
@@ -140,7 +141,7 @@ bot.use(async (ctx, next) => {
       adminChatId.forEach(async (item) => {
         ctx.telegram.sendMessage(
           item,
-          `${responseMessages.delete} ${ctx.update.my_chat_member.chat.id}...`
+          `RESPONSE: ${responseMessages.delete} ${ctx.update.my_chat_member.chat.id}...`
         );
       });
 
