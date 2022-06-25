@@ -155,7 +155,7 @@ bot.use(async (ctx, next) => {
       err = true;
     }
 
-    if (!err) await next();
+    // if (!err) await next();
   } catch (err) {
     errorHandler({ err, name: "Midleware telegraf", ctx });
   }
