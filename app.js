@@ -138,7 +138,10 @@ bot.use(async (ctx, next) => {
     // bot has been deleted by user
     if (ctx.update.my_chat_member) {
       adminChatId.forEach(async (item) => {
-        ctx.telegram.sendMessage(item, `${responseMessages.delete} ${ctx.my_chat_member.chat.id}`);
+        ctx.telegram.sendMessage(
+          item,
+          `${responseMessages.delete} ${ctx.update.my_chat_member.chat.id}`
+        );
       });
 
       err = true;
