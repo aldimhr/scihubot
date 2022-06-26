@@ -1,15 +1,16 @@
-require("dotenv").config();
-const jsdom = require("jsdom");
+require('dotenv').config();
+const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
-const db = require("./database");
-const citation = require("./citation");
-const request = require("./request");
-const page = require("./page");
-const libraryGenesis = require("./libraryGenesis");
-const sciHub = require("./sciHub");
-const downloadFile = require("./downloadFile");
-const errorHandler = require("./errorHandler");
+const db = require('./database');
+const citation = require('./citation');
+const request = require('./request');
+const page = require('./page');
+const libraryGenesis = require('./libraryGenesis');
+const sciHub = require('./sciHub');
+const scihubold = require('./scihubold');
+const downloadFile = require('./downloadFile');
+const errorHandler = require('./errorHandler');
 
 const errMsg = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
@@ -24,7 +25,7 @@ let getMetaDOI = async (url, ctx) => {
       console.log({ citationDOI });
 
       if (citationDOI) {
-        return { data: "https://doi.org/" + citationDOI, error: false };
+        return { data: 'https://doi.org/' + citationDOI, error: false };
       }
 
       return { data: null, error: errMsg };
@@ -41,6 +42,7 @@ module.exports = {
   downloadFile,
   errorHandler,
   getMetaDOI,
+  scihubold,
   citation,
   request,
   sciHub,

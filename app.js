@@ -6,8 +6,8 @@
 [ ] Send error message to admin for monitoring
 [ ] 403 forbidden / blocked ip / ddos-guard
 */
-require("dotenv").config();
-const { Telegraf } = require("telegraf");
+require('dotenv').config();
+const { Telegraf } = require('telegraf');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 const adminChatId = [519613720, 1392922267];
@@ -20,11 +20,12 @@ const {
   db,
   errorHandler,
   libraryGenesis,
-} = require("./helpers");
+  scihubold,
+} = require('./helpers');
 
 let keyboardMessage = {
-  default: [["⚓️ Search Document"], ["💰 Donation", "🤠 Support"]],
-  search: [["by Publisher URL"], ["by DOI"], ["by Title"], ["by Author"]],
+  default: [['⚓️ Search Document'], ['💰 Donation', '🤠 Support']],
+  search: [['by Publisher URL'], ['by DOI'], ['by Title'], ['by Author']],
 };
 
 let responseMessages = {
@@ -83,14 +84,14 @@ https://www.buymeacoffee.com/x0code
 0xC4cB89575A39Cb1A7066BB855B4FdA5Ce3cEE64a
 
 Thankyou!`,
-  support: "For any question or business inquiries please contact @x0code",
-  wait: "🕵‍♀️ Searching your file...",
-  null: "null message",
+  support: 'For any question or business inquiries please contact @x0code',
+  wait: '🕵‍♀️ Searching your file...',
+  null: 'null message',
 };
 
 // middleware
 bot.use(async (ctx, next) => {
-  console.log("====================================================");
+  console.log('====================================================');
   try {
     let err = false;
 
@@ -98,43 +99,42 @@ bot.use(async (ctx, next) => {
     if (ctx?.message) {
       console.log(ctx?.message);
 
-      let chat_id = ctx.message?.chat.id;
-      let username = ctx.message?.chat?.username;
-      let first_name = ctx.message?.chat?.first_name;
+      // let chat_id = ctx.message?.chat.id;
+      // let username = ctx.message?.chat?.username;
+      // let first_name = ctx.message?.chat?.first_name;
 
-      if (ctx.message.text === "/start") {
-        // get user from db
-        let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
+      // if (ctx.message.text === "/start") {
+      //   // get user from db
+      //   let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
 
-        console.log({ getUser, getUserError });
+      //   console.log({ getUser, getUserError });
 
-        if (!getUser.length) {
-          // add user from db
-          await db.addUser({
-            chat_id,
-            username,
-            first_name,
-          });
+      //   if (!getUser.length) {
+      //     // add user from db
+      //     await db.addUser({
+      //       chat_id,
+      //       username,
+      //       first_name,
+      //     });
 
-          // notify admin
-          adminChatId.forEach((item) => {
-            ctx.telegram.sendMessage(
-              item,
-              `New user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`
-            );
-          });
-        }
-      }
-      ctx.reply(
-        "THIS BOT UNDER MAINTENANCE\n\nSubscribe to @x0projects for the latest information"
-      );
-      return;
+      //     // notify admin
+      //     adminChatId.forEach((item) => {
+      //       ctx.telegram.sendMessage(
+      //         item,
+      //         `New user added \nUsername: ${username}\nFirst name: ${first_name}\nChat id: ${chat_id}`
+      //       );
+      //     });
+      //   }
+      // }
+      // ctx.reply(
+      //   "THIS BOT UNDER MAINTENANCE\n\nSubscribe to @x0projects for the latest information"
+      // );
+      // return;
     } else if (ctx?.update?.my_chat_member) {
-      console.log(ctx?.update.my_chat_member);
+      console.log(ctx.update.my_chat_member);
     } else {
       console.log({ ctx });
     }
-    //
 
     // bot has been deleted by user
     if (ctx.update.my_chat_member) {
@@ -155,18 +155,18 @@ bot.use(async (ctx, next) => {
       err = true;
     }
 
-    // if (!err) await next();
+    if (!err) await next();
   } catch (err) {
-    errorHandler({ err, name: "Midleware telegraf", ctx });
+    errorHandler({ err, name: 'Midleware telegraf', ctx });
   }
 });
 
 // menus
-bot.hears("🤠 Support", (ctx) => ctx.reply(responseMessages.support));
-bot.hears("⚓️ Search Document", (ctx) => {
+bot.hears('🤠 Support', (ctx) => ctx.reply(responseMessages.support));
+bot.hears('⚓️ Search Document', (ctx) => {
   ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
 });
-bot.hears("💰 Donation", (ctx) => {
+bot.hears('💰 Donation', (ctx) => {
   ctx.reply(responseMessages.donation, {
     disable_web_page_preview: true,
   });
@@ -218,16 +218,16 @@ bot.start(async (ctx) => {
       });
     }
   } catch (err) {
-    errorHandler({ err, name: "app.js/bot.start()", ctx });
+    errorHandler({ err, name: 'app.js/bot.start()', ctx });
   }
 });
 
 // prevent photo, document and voice message
-bot.on(["photo", "document", "voice", "sticker"], (ctx) => {
+bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => {
   ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
 });
 
-bot.entity(["url", "text_link"], async (ctx) => {
+bot.entity(['url', 'text_link'], async (ctx) => {
   try {
     let message = ctx.message;
     let text = message?.text;
@@ -236,7 +236,7 @@ bot.entity(["url", "text_link"], async (ctx) => {
 
     // if many links in one message
     if (entities.length > 1) {
-      return await ctx.telegram.sendMessage(chat_id, "Please enter the links one by one", {
+      return await ctx.telegram.sendMessage(chat_id, 'Please enter the links one by one', {
         reply_to_message_id: message.message_id,
       });
     }
@@ -248,18 +248,20 @@ bot.entity(["url", "text_link"], async (ctx) => {
 
     let fileURL, errorGettingFile;
     let doi = text;
-    if (text.includes("://doi.org/") && text.includes("http")) {
+    if (text.includes('://doi.org/') && text.includes('http')) {
       // get file link
       // await sciHub(text).then(({ data, error }) => {
-      await libraryGenesis(text).then(({ data, error }) => {
+      // await libraryGenesis(text).then(({ data, error }) => {
+      await scihubold(text).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
-    } else if (text.includes("doi.org/") && !text.includes("http")) {
+    } else if (text.includes('doi.org/') && !text.includes('http')) {
       doi = `https://${text}`;
       // add http
       // await sciHub(`https://${text}`).then(({ data, error }) => {
-      await libraryGenesis(`https://${text}`).then(({ data, error }) => {
+      // await libraryGenesis(`https://${text}`).then(({ data, error }) => {
+      await scihubold(`https://${text}`).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
@@ -271,7 +273,8 @@ bot.entity(["url", "text_link"], async (ctx) => {
         if (data) {
           doi = data;
           // await sciHub(data).then(({ data, error }) => {
-          await libraryGenesis(data).then(({ data, error }) => {
+          // await libraryGenesis(data).then(({ data, error }) => {
+          await scihubold(data).then(({ data, error }) => {
             fileURL = data;
             errorGettingFile = error;
           });
@@ -316,21 +319,21 @@ bot.entity(["url", "text_link"], async (ctx) => {
         filename: `${doi}.pdf`,
       },
       {
-        caption: citationData || "",
+        caption: citationData || '',
         reply_to_message_id: message.message_id,
       }
     );
   } catch (err) {
-    errorHandler({ err, name: "app.js/bot.entity()", ctx });
+    errorHandler({ err, name: 'app.js/bot.entity()', ctx });
   }
 });
 
 // search by keyword
-bot.command("kw", (ctx) => {
-  ctx.reply("Searching document by keyword still under development");
+bot.command('kw', (ctx) => {
+  ctx.reply('Searching document by keyword still under development');
 });
 
-bot.on("text", (ctx) => {
+bot.on('text', (ctx) => {
   ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
 });
 
