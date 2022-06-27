@@ -80,8 +80,11 @@ Your support matters. This project survives on the kindness & generosity of your
 
 https://www.buymeacoffee.com/x0code
 
-[ETH] [BSC]
+[ETH] [BNB]
 0xC4cB89575A39Cb1A7066BB855B4FdA5Ce3cEE64a
+
+[BTC]
+bc1q3hg8p8sg54vade6fl02y55vlcqu2zyw4h93vc0
 
 Thankyou!`,
   support: 'For any question or business inquiries please contact @x0code',
@@ -330,6 +333,10 @@ bot.entity(['url', 'text_link'], async (ctx) => {
 
 // search by keyword
 bot.command('kw', (ctx) => {
+  // let text = ctx.message.text;
+  // let textSplit = text.split('/kw').join('').trim();
+  // console.log({ textSplit });
+
   ctx.reply('Searching document by keyword still under development');
 });
 

@@ -1,15 +1,15 @@
-const request = require("./request");
-const { JSDOM } = require("jsdom");
+const request = require('./request');
+const { JSDOM } = require('jsdom');
 
 const errMessage = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
 const filterDOI = (DOI) => {
-  let splitter = DOI.split("doi.org/");
+  let splitter = DOI.split('doi.org/');
   return splitter[splitter.length - 1];
 };
 
 module.exports = async (url) => {
-  console.log("SCIHUB");
+  console.log('SCIHUB');
 
   let urls = [];
   try {
@@ -18,8 +18,8 @@ module.exports = async (url) => {
 
     // filter html
     const { document } = new JSDOM(libgenpage).window;
-    let getDownloadURL = document.querySelectorAll(".record_mirrors")[0];
-    let ahref = getDownloadURL.querySelectorAll("a");
+    let getDownloadURL = document.querySelectorAll('.record_mirrors')[0];
+    let ahref = getDownloadURL.querySelectorAll('a');
     ahref.forEach((item) => {
       urls.push(item.href);
     });
@@ -31,13 +31,13 @@ module.exports = async (url) => {
     const libgenhtml = new JSDOM(libgendownload).window.document;
     console.log({ libgenhtml });
 
-    let libgenhtmlselector = libgenhtml.querySelectorAll("a");
+    let libgenhtmlselector = libgenhtml.querySelectorAll('a');
     libgenhtmlselector.forEach((item) => {
-      if (item.href.includes("get.php?md5=")) url = item.href;
+      if (item.href.includes('get.php?md5=')) url = item.href;
     });
     return { data: `https://libgen.rocks/${url}`, error: false };
   } catch (err) {
-    console.log({ "helpers/libraryGenesis.js": err });
+    console.log({ 'helpers/libraryGenesis.js': err });
     return {
       data: null,
       error: errMessage,
