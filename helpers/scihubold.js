@@ -14,8 +14,14 @@ module.exports = async (url) => {
     let getDownloadURL = document.getElementById('pdf');
 
     if (!getDownloadURL) {
-      let smile = document.getElementById('smile');
-      if (!smile) console.log({ SCIHUBDATA: scihubPage });
+      if (scihubPage.includes('Sorry, sci-hub has not included this article yet')) {
+        return { data: null, error: errMessage };
+      } else {
+        console.log({ SCIHUBDATA: scihubPage });
+      }
+      // let smile = document.getElementById('smile');
+      // let getTag = document.getElementsByTagName
+      // if (!smile) console.log({ SCIHUBDATA: scihubPage });
       return { data: null, error: errMessage };
     }
 
