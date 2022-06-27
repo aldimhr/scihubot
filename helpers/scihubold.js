@@ -19,6 +19,8 @@ module.exports = async (url) => {
       return { data: null, error: errMessage };
     }
 
+    if (!getDownloadURL.src.includes('http')) getDownloadURL.src = `http:${getDownloadURL.src}`;
+
     // if (getDownloadURL.src.includes('sci-hub')) {
     //   return { data: 'https:' + getDownloadURL.src, error: false };
     // }
