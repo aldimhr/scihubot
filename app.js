@@ -323,6 +323,9 @@ bot.entity(['url', 'text_link'], async (ctx) => {
       });
     }
 
+    // subscribe cahnnel
+    ctx.reply('I have this article!\n\nSubscribe to x0projects channel in Telegram: @x0projects');
+
     // send file to user
     ctx.replyWithDocument(
       {
@@ -335,7 +338,7 @@ bot.entity(['url', 'text_link'], async (ctx) => {
       }
     );
   } catch (err) {
-    errorHandler({ err, name: 'app.js/bot.entity()', ctx });
+    errorHandler({ err, name: 'app.js/bot.entity()' });
   }
 });
 
