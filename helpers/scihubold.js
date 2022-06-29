@@ -2,6 +2,7 @@ const request = require('./request');
 const { JSDOM } = require('jsdom');
 
 const errMessage = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
+const errorHandler = require('./errorHandler');
 
 module.exports = async (url) => {
   console.log('SCIHUB');
@@ -36,6 +37,7 @@ module.exports = async (url) => {
     // return { data: "https://us.hidester.com" + getDownloadURL.src, error: false };
   } catch (err) {
     console.log({ 'scihubold.js': err });
+    errorHandler({ err, name: 'helpers/scihubold.js' });
     return {
       data: null,
       error: errMessage,

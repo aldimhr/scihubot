@@ -31,8 +31,10 @@ let getMetaDOI = async (url, ctx) => {
       return { data: null, error: errMsg };
     })
     .catch(async (err) => {
-      console.log({ getMetaDOI: `ERR:helpers/index.js/getMetaDoi()\n${err}` });
+      errorHandler({ err, name: 'helpers/index.js getMetaDOI()' });
+
       ctx.telegram.sendMessage(1392922267, `Input: ${url}\n\n${err}`);
+
       return { data: null, error: errMsg };
     });
 };
