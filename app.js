@@ -348,6 +348,52 @@ bot.command('kw', (ctx) => {
   ctx.reply('Searching document by keyword still under development');
 });
 
+// ADMIN ONLY
+bot.command('cuar', async (ctx) => {
+  try {
+    const message = ctx.message;
+    const text = message.text;
+    const chat_id = message.chat.id;
+
+    // check if its an admin
+    let { data } = await db.getUser({ chat_id });
+
+    if (data[0].permission === 'admin') {
+      console.log(`================ CUAR MODE ================`);
+      let { data: users } = await db.getUsers();
+      let filterText = text.split('/cuar').join('').trim();
+      // const dummyUsers = [
+      //   { chat_id: 519613720, id: 1 },
+      //   { chat_id: 139292226, id: 2 },
+      //   { chat_id: 1392922267, id: 3 },
+      //   { chat_id: 519613720, id: 4 },
+      //   { chat_id: 139292226, id: 5 },
+      //   { chat_id: 1392922267, id: 6 },
+      // ];
+      // console.log({ users });
+
+      let n = 1;
+      users.forEach(async (item) => {
+        // dummyUsers.forEach(async (item) => {
+        ctx.telegram
+          .sendMessage(item.chat_id, filterText)
+          .then((data) => {
+            console.log(`================ ${item.id} ================`);
+            n++;
+          })
+          .catch((err) => {
+            console.log(`================ ERR:${item.id} ================`);
+            n++;
+          });
+      });
+    } else {
+      return;
+    }
+  } catch (err) {
+    console.log({ err });
+  }
+});
+
 bot.on('text', (ctx) => {
   ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
 });
