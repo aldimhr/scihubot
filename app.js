@@ -32,7 +32,7 @@ let responseMessages = {
   welcome: `
 Welcome to Sci-Hub Bot!
 
-How it works? Simply drop a DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, by DOI Path etc.)
+How it works? Simply drop a DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, etc.)
 
 Example:
 
@@ -42,19 +42,19 @@ https://doi.org/10.1177/193229681300700321
 [PUBLISHER]
 https://www.nature.com/articles/laban.665
 
-SOON:
-
 [DOI-PATH]
-/kw 10.1177/193229681300700321
+10.1177/193229681300700321
+DOI:10.1177/193229681300700321
+DOI 10.1177/193229681300700321
 
+SOON:
 [KEYWORD]
 /kw computer science
-
 
 Subscribe:
 @x0projects`,
   inputLink: `
-Send me a DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, by DOI path etc.)
+Send me a DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, etc.)
 
 Example:
 
@@ -64,14 +64,14 @@ https://doi.org/10.1177/193229681300700321
 [PUBLISHER]
 https://www.nature.com/articles/laban.665
 
-SOON:
-
 [DOI-PATH]
-/kw 10.1177/193229681300700321
+10.1177/193229681300700321
+DOI:10.1177/193229681300700321
+DOI 10.1177/193229681300700321
 
+SOON:
 [KEYWORD]
 /kw computer science
-
 
 Subscribe:
 @x0projects`,
@@ -257,8 +257,9 @@ bot.entity(['url', 'text_link'], async (ctx) => {
       reply_to_message_id: message.message_id,
     });
 
-    let fileURL, errorGettingFile;
-    let doi = text;
+    let fileURL,
+      errorGettingFile,
+      doi = text;
     if (text.includes('://doi.org/') && text.includes('http')) {
       // get file link
       // await sciHub(text).then(({ data, error }) => {
@@ -317,6 +318,8 @@ bot.entity(['url', 'text_link'], async (ctx) => {
 
     // delete wait message
     await ctx.telegram.deleteMessage(chat_id, message_id);
+
+    // send error message
     if (errorGettingFile) {
       return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
         reply_to_message_id: message.message_id,
@@ -397,7 +400,81 @@ bot.command('cuar', async (ctx) => {
   }
 });
 
-bot.on('text', (ctx) => {
+bot.on('text', async (ctx) => {
+  const message = ctx.message,
+    chat_id = message.chat.id;
+  let doi,
+    fileURL,
+    errorGettingFile,
+    text = message.text;
+
+  if (text.toLowerCase().includes('doi:')) {
+    doi = `http://doi.org/${text.toLowerCase().split('doi:').join('').trim()}`;
+  } else if (text.toLowerCase().includes('doi')) {
+    doi = `http://doi.org/${text.toLowerCase().split('doi').join('').trim()}`;
+  } else if (text.includes('/') && text.includes('.') && text.split(' ').length === 1) {
+    if (text[0] === '/') text = text.substring(1);
+    doi = `http://doi.org/${text}`;
+  }
+
+  // nothing doi URL
+  if (doi.length < 20) {
+    return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
+  }
+
+  if (doi) {
+    // wait message
+    let { message_id } = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
+      reply_to_message_id: message.message_id,
+    });
+
+    // getting file
+    await scihubold(doi).then(({ data, error }) => {
+      fileURL = data;
+      errorGettingFile = error;
+    });
+
+    // send error message
+    if (errorGettingFile) {
+      return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+        reply_to_message_id: message.message_id,
+      });
+    }
+
+    // download file
+    const dFile = await downloadFile(fileURL);
+    console.log({ dFile });
+    if (dFile.error) {
+      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+        reply_to_message_id: message.message_id,
+      });
+      return await ctx.telegram.deleteMessage(chat_id, message_id);
+    }
+
+    // get citation
+    let { data: citationData, error: citationError } = await citation(doi);
+    console.log({ citationData, citationError });
+
+    // delete wait message
+    await ctx.telegram.deleteMessage(chat_id, message_id);
+
+    // subscribe cahnnel
+    ctx.reply('I have this article!\n\nSubscribe to x0projects channel in Telegram: @x0projects');
+
+    // send file to user
+    ctx.replyWithDocument(
+      {
+        source: dFile.data,
+        filename: `${doi}.pdf`,
+      },
+      {
+        caption: citationData || '',
+        reply_to_message_id: message.message_id,
+      }
+    );
+    return;
+  }
+
   ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
 });
 

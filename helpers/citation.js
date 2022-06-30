@@ -1,12 +1,16 @@
-const axios = require("axios");
-const errorHandler = require("./errorHandler");
+const axios = require('axios');
+const errorHandler = require('./errorHandler');
 
 module.exports = async (doi) => {
-  let { data, error } = await axios
+  return await axios
     .get(`https://citation.crosscite.org/format?doi=${doi}&style=apa&lang=en-US`)
+    .then(({ data }) => {
+      return { data, error: null };
+    })
     .catch((err) => {
-      errorHandler({ err, name: "helpers/citation.js" });
+      if (err.response.status !== 404) {
+        errorHandler({ err, name: 'helpers/citation.js' });
+      }
+      return { data: '', error: err };
     });
-
-  return { data, error };
 };
