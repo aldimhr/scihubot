@@ -418,7 +418,7 @@ bot.on('text', async (ctx) => {
   }
 
   // nothing doi URL
-  if (doi.length < 20) {
+  if (doi.length < 20 || (doi && doi.split(' ').length > 1)) {
     return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
   }
 
