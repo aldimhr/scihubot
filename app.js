@@ -338,6 +338,10 @@ bot.entity(['url', 'text_link'], async (ctx) => {
       {
         caption: citationData || '',
         reply_to_message_id: message.message_id,
+        reply_markup: {
+          resize_keyboard: true,
+          keyboard: keyboardMessage.default,
+        },
       }
     );
   } catch (err) {
@@ -414,15 +418,16 @@ bot.on('text', async (ctx) => {
     doi = `http://doi.org/${text.toLowerCase().split('doi').join('').trim()}`;
   } else if (text.includes('/') && text.includes('.') && text.split(' ').length === 1) {
     if (text[0] === '/') text = text.substring(1);
+
     doi = `http://doi.org/${text}`;
   }
 
-  // nothing doi URL
-  if (doi.length < 20 || (doi && doi.split(' ').length > 1)) {
-    return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
-  }
+  // false DOI URL
+  // if (doi && (doi.length < 20 || doi.split(' ').length > 1)) {
+  //   return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
+  // }
 
-  if (doi) {
+  if (doi && doi.length > 20 && doi.split(' ').length === 1) {
     // wait message
     let { message_id } = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
       reply_to_message_id: message.message_id,
@@ -470,6 +475,10 @@ bot.on('text', async (ctx) => {
       {
         caption: citationData || '',
         reply_to_message_id: message.message_id,
+        reply_markup: {
+          resize_keyboard: true,
+          keyboard: keyboardMessage.default,
+        },
       }
     );
     return;
