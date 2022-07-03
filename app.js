@@ -441,6 +441,7 @@ bot.on('text', async (ctx) => {
 
     // send error message
     if (errorGettingFile) {
+      console.log({ fileURL, errorGettingFile });
       ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
         reply_to_message_id: message.message_id,
       });
