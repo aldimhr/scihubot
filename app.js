@@ -441,9 +441,10 @@ bot.on('text', async (ctx) => {
 
     // send error message
     if (errorGettingFile) {
-      return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
         reply_to_message_id: message.message_id,
       });
+      return await ctx.telegram.deleteMessage(chat_id, message_id);
     }
 
     // download file
