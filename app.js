@@ -316,13 +316,15 @@ bot.command('kw', async (ctx) => {
 
   // filter text
   const textTarget = text.split('/kw').join('').trim();
-  if (!isNaN(textTarget)) {
-    ctx.reply('Please input a keyword not a number');
-  }
 
-  // check text input
+  // check text input length
   if (textTarget.length < 5) {
     return ctx.reply('Please enter the keyword at least 5 letters');
+  }
+
+  // if input just number
+  if (!isNaN(textTarget)) {
+    return ctx.reply('Please input a keyword not a number');
   }
 
   // search keyword
