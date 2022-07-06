@@ -11,6 +11,8 @@ const sciHub = require('./sciHub');
 const scihubold = require('./scihubold');
 const downloadFile = require('./downloadFile');
 const errorHandler = require('./errorHandler');
+const isPDF = require('./isPDF');
+const searchKeyword = require('./keyword');
 
 const errMsg = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
@@ -41,6 +43,7 @@ let getMetaDOI = async (url, ctx) => {
 
 module.exports = {
   libraryGenesis,
+  searchKeyword,
   downloadFile,
   errorHandler,
   getMetaDOI,
@@ -48,6 +51,7 @@ module.exports = {
   citation,
   request,
   sciHub,
+  isPDF,
   page,
   db,
 };

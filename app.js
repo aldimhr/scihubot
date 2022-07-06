@@ -1,9 +1,9 @@
 /*
 @Sci_Hubot UPDATE:
-[v] Search using keyword
+[v] Search by keyword
 [v] Add crypto address for donation
 [v] Fixing error
-[ ] Send error message to admin for monitoring
+[v] Send error message to admin for monitoring
 [ ] 403 forbidden / blocked ip / ddos-guard
 */
 require('dotenv').config();
@@ -13,70 +13,53 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const adminChatId = [519613720, 1392922267];
 
 const {
+  libraryGenesis,
+  searchKeyword,
   downloadFile,
+  errorHandler,
+  getMetaDOI,
+  scihubold,
   citation,
   sciHub,
-  getMetaDOI,
   db,
-  errorHandler,
-  libraryGenesis,
-  scihubold,
 } = require('./helpers');
 
 let keyboardMessage = {
   default: [['⚓️ Search Document'], ['💰 Donation', '🤠 Support']],
-  search: [['by Publisher URL'], ['by DOI'], ['by Title'], ['by Author']],
 };
 
 let responseMessages = {
   welcome: `
 Welcome to Sci-Hub Bot!
 
-How it works? Simply drop a DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, etc.)
+How does this bot work? Drop a DOI or Publisher URL below, or you can search by keyword by using "/kw" command before the keyword you want to search for. Use the /help command to find out more.
 
-Example:
+Developed by: @x0projects
+  `,
+
+  help: `
+This bot accepts several types of input, including DOI-URL, DOI-path, publisher, and searches files by keyword. Below is an example of the input that bots can accept
 
 [DOI-URL]
 https://doi.org/10.1177/193229681300700321
-
-[PUBLISHER]
-https://www.nature.com/articles/laban.665
 
 [DOI-PATH]
 10.1177/193229681300700321
 DOI:10.1177/193229681300700321
 DOI 10.1177/193229681300700321
 
-SOON:
-[KEYWORD]
-/kw computer science
-
-Subscribe:
-@x0projects`,
-  inputLink: `
-Send me a DOI or Publisher URL below or use "/kw" before the keyword you want to search for (by Title, by Subject, by Author, etc.)
-
-Example:
-
-[DOI-URL]
-https://doi.org/10.1177/193229681300700321
-
 [PUBLISHER]
 https://www.nature.com/articles/laban.665
 
-[DOI-PATH]
-10.1177/193229681300700321
-DOI:10.1177/193229681300700321
-DOI 10.1177/193229681300700321
-
-SOON:
 [KEYWORD]
 /kw computer science
 
-Subscribe:
-@x0projects`,
-  donation: `
-Your support matters. This project survives on the kindness & generosity of your contributions.
+<i>Note: add '/kw' before the keyword you want to search, this is mandatory if you want to search papers by keyword</i>
+  `,
+
+  inputLink: `Please drop a DOI or Publisher URL below, or you can search by keyword by using "/kw" command before the keyword you want to search for. Use the /help command to find out more.`,
+
+  donation: `Your support matters. This project survives on the kindness & generosity of your contributions.
 
 https://www.buymeacoffee.com/x0code
 
@@ -141,8 +124,9 @@ bot.use(async (ctx, next) => {
         postpone.start(ctx);
         return;
       }
-    } else if (ctx?.update?.my_chat_member) {
-      console.log(ctx.update.my_chat_member);
+    } else if (ctx?.update && !ctx?.update?.callback_query?.data) {
+      console.log({ update: ctx.update });
+      console.log({ myChatMember: ctx.update.my_chat_member });
     } else {
       console.log({ ctx });
     }
@@ -160,7 +144,7 @@ bot.use(async (ctx, next) => {
     }
 
     // no message data / blocked
-    if (!ctx?.message) {
+    if (!ctx?.message && !ctx?.update?.callback_query) {
       adminChatId.forEach(async (item) => ctx.telegram.sendMessage(item, responseMessages.null));
 
       err = true;
@@ -232,12 +216,143 @@ bot.start(async (ctx) => {
     errorHandler({ err, name: 'app.js/bot.start()', ctx });
   }
 });
+bot.help(async (ctx) => {
+  ctx.reply(responseMessages.help, {
+    disable_web_page_preview: true,
+    parse_mode: 'HTML',
+  });
+});
 
-// prevent photo, document and voice message
+// prevent photo, document, sticker and voice message
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => {
   ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
 });
 
+// getting callback_query from /kw
+bot.on('callback_query', async (ctx) => {
+  const update = ctx.update;
+  const callback_query = update.callback_query;
+  const message = callback_query.message;
+  const messageId = message.message_id;
+  const doi = `http://doi.org/${callback_query.data}`;
+  let fileURL;
+  let errorGettingFile;
+
+  // wait message
+  const { message_id: waitMessageId } = await ctx.reply(responseMessages.wait);
+
+  // delete message
+  await ctx.telegram.deleteMessage(message.chat.id, messageId);
+
+  // getting file from Sci-Hub
+  await scihubold(doi).then(({ data, error }) => {
+    fileURL = data;
+    errorGettingFile = error;
+  });
+
+  // send error message
+  if (errorGettingFile) {
+    console.log({ fileURL, errorGettingFile });
+
+    return ctx.editMessageText(
+      `Unfortunately, Sci-Hub doesn't have the requested document :-(\n\n${doi}`,
+      {
+        disable_web_page_preview: true,
+        chat_id: message.chat.id,
+        message_id: waitMessageId,
+      }
+    );
+  }
+
+  // download file
+  const dFile = await downloadFile(fileURL);
+  console.log({ dFile });
+
+  if (dFile.error) {
+    return ctx.editMessageText(
+      `Unfortunately, Sci-Hub doesn't have the requested document :-(\n\n${doi}`,
+      {
+        disable_web_page_preview: true,
+        chat_id: message.chat.id,
+        message_id: waitMessageId,
+      }
+    );
+  }
+
+  // get citation
+  let { data: citationData, error: citationError } = await citation(doi);
+  console.log({ citationData, citationError });
+
+  // subscribe cahnnel
+  ctx.editMessageText(
+    'I have this article!\n\nSubscribe to x0projects channel in Telegram: @x0projects',
+    {
+      chat_id: message.chat.id,
+      message_id: waitMessageId,
+    }
+  );
+
+  // send file to user
+  ctx.replyWithDocument(
+    {
+      source: dFile.data,
+      filename: `${doi}.pdf`,
+    },
+    {
+      caption: citationData || '',
+      reply_markup: {
+        resize_keyboard: true,
+        keyboard: keyboardMessage.default,
+      },
+    }
+  );
+  return;
+});
+
+// search by keyword
+bot.command('kw', async (ctx) => {
+  const message = ctx.message;
+  const text = message.text;
+
+  // filter text
+  const textTarget = text.split('/kw').join('').trim();
+
+  // check text input
+  if (textTarget.length < 5) {
+    return ctx.reply('Please enter the keyword at least 5 letters');
+  }
+
+  // search keyword
+  const searchResult = await searchKeyword(textTarget);
+  if (!searchKeyword) {
+    return ctx.reply("This bot can't read your keywords");
+  }
+
+  // mapping array of search result to inline keyboard structure
+  const resultKeyboard = searchResult.map((item) => {
+    let arr = [];
+    arr.push({
+      text: item.title,
+      callback_data: item.externalIds['DOI'],
+    });
+    return arr;
+  });
+
+  // reply with list of papers
+  return ctx.reply(
+    `Top 10 papers of the keywords entered
+
+<i>Note: not all files above are available in the Sci-Hub database</i>`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: resultKeyboard,
+      },
+    }
+  );
+});
+
+// Message text is url / text_link
 bot.entity(['url', 'text_link'], async (ctx) => {
   try {
     let message = ctx.message;
@@ -260,6 +375,8 @@ bot.entity(['url', 'text_link'], async (ctx) => {
     let fileURL,
       errorGettingFile,
       doi = text;
+
+    //filter text
     if (text.includes('://doi.org/') && text.includes('http')) {
       // get file link
       // await sciHub(text).then(({ data, error }) => {
@@ -349,16 +466,7 @@ bot.entity(['url', 'text_link'], async (ctx) => {
   }
 });
 
-// search by keyword
-bot.command('kw', (ctx) => {
-  // let text = ctx.message.text;
-  // let textSplit = text.split('/kw').join('').trim();
-  // console.log({ textSplit });
-
-  ctx.reply('Searching document by keyword still under development');
-});
-
-// ADMIN ONLY
+// ADMIN ONLY - TO BROADCAST MESSAGE
 bot.command('cuar', async (ctx) => {
   try {
     const message = ctx.message;
@@ -422,11 +530,6 @@ bot.on('text', async (ctx) => {
     doi = `http://doi.org/${text}`;
   }
 
-  // false DOI URL
-  // if (doi && (doi.length < 20 || doi.split(' ').length > 1)) {
-  //   return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
-  // }
-
   if (doi && doi.length > 20 && doi.split(' ').length === 1) {
     // wait message
     let { message_id } = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
@@ -488,5 +591,10 @@ bot.on('text', async (ctx) => {
 
   ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
 });
+
+// handling error
+// bot.catch((err, ctx) => {
+//   return console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
+// });
 
 bot.launch();
