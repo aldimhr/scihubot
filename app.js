@@ -316,6 +316,9 @@ bot.command('kw', async (ctx) => {
 
   // filter text
   const textTarget = text.split('/kw').join('').trim();
+  if (!isNaN(textTarget)) {
+    ctx.reply('Please input a keyword not a number');
+  }
 
   // check text input
   if (textTarget.length < 5) {
