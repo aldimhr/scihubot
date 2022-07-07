@@ -315,7 +315,7 @@ bot.command('kw', async (ctx) => {
   const text = message.text;
 
   // filter text
-  const textTarget = text.split('/kw').join('').trim();
+  const textTarget = text.split('/kw').join('').trim().replace(/\s\s+/g, ' ');
 
   // check text input length
   if (textTarget.length < 5) {
