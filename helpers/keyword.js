@@ -10,7 +10,7 @@ const errorHandler = require('./errorHandler');
 module.exports = async (query) => {
   return await axios
     .get(
-      `https://api.semanticscholar.org/graph/v1/paper/search?query=${query}&offset=10&limit=1000&fields=title,authors,externalIds`
+      `https://api.semanticscholar.org/graph/v1/paper/search?query=${query}&offset=1000&limit=100&fields=title,authors,externalIds`
     )
     .then(({ data }) => {
       // filter just journal that have a DOI
