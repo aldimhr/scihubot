@@ -329,8 +329,10 @@ bot.command('kw', async (ctx) => {
 
   // search keyword
   const searchResult = await searchKeyword(textTarget);
-  if (!searchKeyword) {
-    return ctx.reply("This bot can't read your keywords");
+  if (!searchResult) {
+    return ctx.reply(
+      "This bot can't read your keywords. This can happen when your keywords are too long."
+    );
   }
 
   // mapping array of search result to inline keyboard structure
@@ -347,7 +349,7 @@ bot.command('kw', async (ctx) => {
   return ctx.reply(
     `Top 10 papers of the keywords entered
 
-<i>Note: not all files above are available in the Sci-Hub database</i>`,
+<i>Note: not all files below are available in the Sci-Hub database</i>`,
     {
       parse_mode: 'HTML',
       reply_markup: {
