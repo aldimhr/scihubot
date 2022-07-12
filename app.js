@@ -10,6 +10,8 @@ require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
+const errorHandler = require('./helpers/errorHandler');
+
 const adminChatId = [519613720, 1392922267];
 
 const {
@@ -600,8 +602,9 @@ bot.on('text', async (ctx) => {
 });
 
 // handling error
-// bot.catch((err, ctx) => {
-//   return console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
-// });
+bot.catch((err, ctx) => {
+  errorHandler({ name: 'app.js/bot.catch()', err });
+  return console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
+});
 
 bot.launch();
