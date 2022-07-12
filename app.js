@@ -10,8 +10,6 @@ require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-const errorHandler = require('./helpers/errorHandler');
-
 const adminChatId = [519613720, 1392922267];
 
 const {
