@@ -157,14 +157,22 @@ bot.use(async (ctx, next) => {
 });
 
 // menus
-bot.hears('🤠 Support', (ctx) => ctx.reply(responseMessages.support));
+bot.hears('🤠 Support', (ctx) =>
+  ctx.reply(responseMessages.support).catch((err) => console.log('ERROR hears.support', err))
+);
 bot.hears('⚓️ Search Document', (ctx) => {
-  ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
+  ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true }).catch((err) => {
+    console.log('ERROR hears search document');
+  });
 });
 bot.hears('💰 Donation', (ctx) => {
-  ctx.reply(responseMessages.donation, {
-    disable_web_page_preview: true,
-  });
+  ctx
+    .reply(responseMessages.donation, {
+      disable_web_page_preview: true,
+    })
+    .catch((err) => {
+      console.log('ERROR hears donation');
+    });
 
   adminChatId.forEach((item) => {
     ctx.telegram.sendMessage(item, `Someone see donation\nChat id: ${ctx.message.chat.id}`);
@@ -224,15 +232,21 @@ bot.start(async (ctx) => {
   }
 });
 bot.help(async (ctx) => {
-  ctx.reply(responseMessages.help, {
-    disable_web_page_preview: true,
-    parse_mode: 'HTML',
-  });
+  ctx
+    .reply(responseMessages.help, {
+      disable_web_page_preview: true,
+      parse_mode: 'HTML',
+    })
+    .catch((err) => {
+      console.log('ERROR bot.help', err);
+    });
 });
 
 // prevent photo, document, sticker and voice message
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => {
-  ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
+  ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true }).catch((err) => {
+    console.log('ERROR bot.on[]');
+  });
 });
 
 // getting callback_query from /kw
@@ -244,12 +258,21 @@ bot.on('callback_query', async (ctx) => {
   const doi = `http://doi.org/${callback_query.data}`;
   let fileURL;
   let errorGettingFile;
+  let err;
 
   // wait message
-  const { message_id: waitMessageId } = await ctx.reply(responseMessages.wait);
+  const { message_id: waitMessageId } = await ctx.reply(responseMessages.wait).catch((error) => {
+    err = error;
+  });
+
+  if (err) return console.log('ERROR bot.on(callback_query)');
 
   // delete message
-  await ctx.telegram.deleteMessage(message.chat.id, messageId);
+  await ctx.telegram.deleteMessage(message.chat.id, messageId).catch((error) => {
+    err = error;
+  });
+
+  if (err) return console.log('ERROR bot.on(callback_query)');
 
   // getting file from Sci-Hub
   await scihubold(doi).then(({ data, error }) => {
@@ -276,14 +299,15 @@ bot.on('callback_query', async (ctx) => {
   console.log({ dFile });
 
   if (dFile.error) {
-    return ctx.editMessageText(
-      `Unfortunately, Sci-Hub doesn't have the requested document :-(\n\n${doi}`,
-      {
+    return ctx
+      .editMessageText(`Unfortunately, Sci-Hub doesn't have the requested document :-(\n\n${doi}`, {
         disable_web_page_preview: true,
         chat_id: message.chat.id,
         message_id: waitMessageId,
-      }
-    );
+      })
+      .catch((err) => {
+        console.log('ERROR bot.on(callback_query)');
+      });
   }
 
   // get citation
@@ -291,28 +315,36 @@ bot.on('callback_query', async (ctx) => {
   console.log({ citationData, citationError });
 
   // subscribe cahnnel
-  ctx.editMessageText(
-    'I have this article!\n\nSubscribe to x0projects channel in Telegram: @x0projects',
-    {
-      chat_id: message.chat.id,
-      message_id: waitMessageId,
-    }
-  );
+  ctx
+    .editMessageText(
+      'I have this article!\n\nSubscribe to x0projects channel in Telegram: @x0projects',
+      {
+        chat_id: message.chat.id,
+        message_id: waitMessageId,
+      }
+    )
+    .catch((err) => {
+      console.log('ERROR bot.on(callback_query)');
+    });
 
   // send file to user
-  ctx.replyWithDocument(
-    {
-      source: dFile.data,
-      filename: `${doi}.pdf`,
-    },
-    {
-      caption: citationData || '',
-      reply_markup: {
-        resize_keyboard: true,
-        keyboard: keyboardMessage.default,
+  ctx
+    .replyWithDocument(
+      {
+        source: dFile.data,
+        filename: `${doi}.pdf`,
       },
-    }
-  );
+      {
+        caption: citationData || '',
+        reply_markup: {
+          resize_keyboard: true,
+          keyboard: keyboardMessage.default,
+        },
+      }
+    )
+    .catch((err) => {
+      console.log('ERROR bot.on callback_query');
+    });
   return;
 });
 
@@ -326,20 +358,24 @@ bot.command('kw', async (ctx) => {
 
   // check text input length
   if (textTarget.length < 5) {
-    return ctx.reply('Please enter the keyword at least 5 letters');
+    return ctx
+      .reply('Please enter the keyword at least 5 letters')
+      .catch((err) => console.log('ERROR bot.on kw', err));
   }
 
   // if input just number
   if (!isNaN(textTarget)) {
-    return ctx.reply('Please input a keyword not a number');
+    return ctx
+      .reply('Please input a keyword not a number')
+      .catch((err) => console.log('ERROR bot.on kw', err));
   }
 
   // search keyword
   const searchResult = await searchKeyword(textTarget);
   if (!searchResult) {
-    return ctx.reply(
-      "This bot can't read your keywords. This can happen when your keywords are too long."
-    );
+    return ctx
+      .reply("This bot can't read your keywords. This can happen when your keywords are too long.")
+      .catch((err) => console.log('ERROR bot.on kw', err));
   }
 
   // mapping array of search result to inline keyboard structure
@@ -353,17 +389,19 @@ bot.command('kw', async (ctx) => {
   });
 
   // reply with list of papers
-  return ctx.reply(
-    `Top 10 papers of the keywords entered
+  return ctx
+    .reply(
+      `Top 10 papers of the keywords entered
 
 <i>Note: not all files below are available in the Sci-Hub database</i>`,
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: resultKeyboard,
-      },
-    }
-  );
+      {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: resultKeyboard,
+        },
+      }
+    )
+    .catch((err) => console.log('ERROR bot.on kw', err));
 });
 
 // Message text is url / text_link
@@ -376,15 +414,19 @@ bot.entity(['url', 'text_link'], async (ctx) => {
 
     // if many links in one message
     if (entities.length > 1) {
-      return await ctx.telegram.sendMessage(chat_id, 'Please enter the links one by one', {
-        reply_to_message_id: message.message_id,
-      });
+      return await ctx.telegram
+        .sendMessage(chat_id, 'Please enter the links one by one', {
+          reply_to_message_id: message.message_id,
+        })
+        .catch((err) => console.log('ERROR bot entity', err));
     }
 
     // wait message
-    let { message_id } = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
-      reply_to_message_id: message.message_id,
-    });
+    let { message_id } = await ctx.telegram
+      .sendMessage(chat_id, responseMessages.wait, {
+        reply_to_message_id: message.message_id,
+      })
+      .catch((err) => console.log('ERROR bot.entity', err));
 
     let fileURL,
       errorGettingFile,
@@ -427,20 +469,28 @@ bot.entity(['url', 'text_link'], async (ctx) => {
 
     console.log({ fileURL, errorGettingFile });
     if (errorGettingFile) {
-      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-        reply_to_message_id: message.message_id,
-      });
-      return await ctx.telegram.deleteMessage(chat_id, message_id);
+      ctx
+        .reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+          reply_to_message_id: message.message_id,
+        })
+        .catch((err) => console.log('EROR bot.entity', err));
+      return await ctx.telegram
+        .deleteMessage(chat_id, message_id)
+        .catch((err) => console.log('ERROR bot.entity', err));
     }
 
     // download file
     const dFile = await downloadFile(fileURL);
     console.log({ dFile });
     if (dFile.error) {
-      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-        reply_to_message_id: message.message_id,
-      });
-      return await ctx.telegram.deleteMessage(chat_id, message_id);
+      ctx
+        .reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+          reply_to_message_id: message.message_id,
+        })
+        .catch((err) => console.log('ERROR bot.entity', err));
+      return await ctx.telegram
+        .deleteMessage(chat_id, message_id)
+        .catch((err) => console.log('ERROR bot.entity', err));
     }
 
     // get citation
