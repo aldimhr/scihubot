@@ -177,14 +177,21 @@ bot.start(async (ctx) => {
     let chat_id = ctx.message?.chat.id;
     let username = ctx.message?.chat?.username;
     let first_name = ctx.message?.chat?.first_name;
+    let err;
 
-    ctx.reply(responseMessages.welcome, {
-      disable_web_page_preview: true,
-      reply_markup: {
-        resize_keyboard: true,
-        keyboard: keyboardMessage.default,
-      },
-    });
+    ctx
+      .reply(responseMessages.welcome, {
+        disable_web_page_preview: true,
+        reply_markup: {
+          resize_keyboard: true,
+          keyboard: keyboardMessage.default,
+        },
+      })
+      .catch((error) => {
+        err = error;
+      });
+
+    if (err) return console.log('ERROR bot.start()');
 
     // get user from db
     let { data: getUser, error: getUserError } = await db.getUser({ chat_id });
