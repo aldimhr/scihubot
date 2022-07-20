@@ -61,8 +61,6 @@ https://www.nature.com/articles/laban.665
 
   donation: `Your support matters. This project survives on the kindness & generosity of your contributions.
 
-https://www.buymeacoffee.com/x0code
-
 [ETH] [BNB]
 0xC4cB89575A39Cb1A7066BB855B4FdA5Ce3cEE64a
 
@@ -161,7 +159,7 @@ bot.hears('🤠 Support', (ctx) =>
   ctx.reply(responseMessages.support).catch((err) => console.log('ERROR hears.support', err))
 );
 bot.hears('⚓️ Search Document', (ctx) => {
-  ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true }).catch((err) => {
+  ctx.reply(responseMessages.help, { disable_web_page_preview: true }).catch((err) => {
     console.log('ERROR hears search document');
   });
 });
