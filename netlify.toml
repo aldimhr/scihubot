@@ -5,5 +5,3 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
-[build.environment]
-  NPM_FLAGS="--prefix=/dev/null"

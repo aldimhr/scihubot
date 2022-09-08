@@ -4,7 +4,6 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "prebuild": "test \"$CI\" = true && npx pnpm install -r --store=node_modules/.pnpm-store || echo skipping pnpm install",
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "jest",
@@ -21,9 +20,6 @@
     "form-data": "^4.0.0",
     "jsdom": "^19.0.0",
     "netlify-lambda": "^2.0.15",
-    "puppeteer": "^14.4.1",
-    "puppeteer-extra": "^3.3.0",
-    "puppeteer-extra-plugin-stealth": "^2.10.1",
     "telegraf": "^4.8.5",
     "user-agents": "^1.0.1056"
   },
