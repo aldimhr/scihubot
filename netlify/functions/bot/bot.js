@@ -12,7 +12,8 @@ bot.start((ctx) => {
     return ctx.reply('Error occured');
   }
 });
-//
+
+bot.launch();
 
 // AWS event handler syntax (https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html)
 exports.handler = async (event) => {
