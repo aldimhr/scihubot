@@ -19,6 +19,7 @@
     "dotenv": "^16.0.1",
     "form-data": "^4.0.0",
     "jsdom": "^19.0.0",
+    "netlify-lambda": "^2.0.15",
     "puppeteer": "^14.4.1",
     "puppeteer-extra": "^3.3.0",
     "puppeteer-extra-plugin-stealth": "^2.10.1",

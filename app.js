@@ -23,6 +23,7 @@ const {
   sciHub,
   db,
 } = require('./helpers');
+const Entity = require('./telegram/entity');
 
 let keyboardMessage = {
   default: [['⚓️ Search Document'], ['💰 Donation', '🤠 Support']],
@@ -273,7 +274,8 @@ bot.on('callback_query', async (ctx) => {
   if (err) return console.log('ERROR bot.on(callback_query)');
 
   // getting file from Sci-Hub
-  await scihubold(doi).then(({ data, error }) => {
+  await sciHub(doi).then(({ data, error }) => {
+    // await scihubold(doi).then(({ data, error }) => {
     fileURL = data;
     errorGettingFile = error;
   });
@@ -412,19 +414,15 @@ bot.entity(['url', 'text_link'], async (ctx) => {
 
     // if many links in one message
     if (entities.length > 1) {
-      return await ctx.telegram
-        .sendMessage(chat_id, 'Please enter the links one by one', {
-          reply_to_message_id: message.message_id,
-        })
-        .catch((err) => console.log('ERROR bot entity', err));
+      return ctx.reply('Please enter the links one by one', {
+        reply_to_message_id: message.message_id,
+      });
     }
 
     // wait message
-    let { message_id } = await ctx.telegram
-      .sendMessage(chat_id, responseMessages.wait, {
-        reply_to_message_id: message.message_id,
-      })
-      .catch((err) => console.log('ERROR bot.entity', err));
+    let { message_id } = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
+      reply_to_message_id: message.message_id,
+    });
 
     let fileURL,
       errorGettingFile,
@@ -433,18 +431,18 @@ bot.entity(['url', 'text_link'], async (ctx) => {
     //filter text
     if (text.includes('://doi.org/') && text.includes('http')) {
       // get file link
-      // await sciHub(text).then(({ data, error }) => {
-      // await libraryGenesis(text).then(({ data, error }) => {
-      await scihubold(text).then(({ data, error }) => {
+      await sciHub(text).then(({ data, error }) => {
+        // await libraryGenesis(text).then(({ data, error }) => {
+        // await scihubold(text).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
     } else if (text.includes('doi.org/') && !text.includes('http')) {
       doi = `https://${text}`;
       // add http
-      // await sciHub(`https://${text}`).then(({ data, error }) => {
-      // await libraryGenesis(`https://${text}`).then(({ data, error }) => {
-      await scihubold(`https://${text}`).then(({ data, error }) => {
+      await sciHub(`https://${text}`).then(({ data, error }) => {
+        // await libraryGenesis(`https://${text}`).then(({ data, error }) => {
+        // await scihubold(`https://${text}`).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
@@ -455,9 +453,9 @@ bot.entity(['url', 'text_link'], async (ctx) => {
 
         if (data) {
           doi = data;
-          // await sciHub(data).then(({ data, error }) => {
-          // await libraryGenesis(data).then(({ data, error }) => {
-          await scihubold(data).then(({ data, error }) => {
+          await sciHub(data).then(({ data, error }) => {
+            // await libraryGenesis(data).then(({ data, error }) => {
+            // await scihubold(data).then(({ data, error }) => {
             fileURL = data;
             errorGettingFile = error;
           });
@@ -599,7 +597,8 @@ bot.on('text', async (ctx) => {
     });
 
     // getting file
-    await scihubold(doi).then(({ data, error }) => {
+    await sciHub(doi).then(({ data, error }) => {
+      // await scihubold(doi).then(({ data, error }) => {
       fileURL = data;
       errorGettingFile = error;
     });
