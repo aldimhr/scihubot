@@ -1,5 +1,5 @@
 require('dotenv').config();
-const supabase = require('../supabase');
+const supabase = require('../config/supabase-init');
 const errorHandler = require('./errorHandler');
 
 const getUsers = async () => {

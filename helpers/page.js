@@ -3,7 +3,7 @@ const Puppeteer_Stealth = require('puppeteer-extra-plugin-stealth');
 
 Puppeteer.default.use(Puppeteer_Stealth());
 
-const errorHandler = require('./errorHandler');
+const errorHandler = require('../functions/bot/utils/errorHandler');
 
 module.exports = async () => {
   try {

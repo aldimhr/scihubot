@@ -9,10 +9,10 @@ const page = require('./page');
 const libraryGenesis = require('./libraryGenesis');
 const sciHub = require('./sciHub');
 const scihubold = require('./scihubold');
-const downloadFile = require('./downloadFile');
-const errorHandler = require('./errorHandler');
+const downloadFile = require('../functions/bot/utils/downloadFile');
+const errorHandler = require('../functions/bot/utils/errorHandler');
 const isPDF = require('./isPDF');
-const searchKeyword = require('./keyword');
+const searchKeyword = require('../functions/bot/utils/keyword');
 
 const errMsg = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 

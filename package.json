@@ -4,8 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
+    "start": "node functions/bot/bot.js",
+    "dev": "nodemon functions/bot/bot.js",
     "test": "jest",
     "test:watch": "jest --watch"
   },

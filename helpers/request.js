@@ -3,7 +3,7 @@ const Puppeteer_Stealth = require('puppeteer-extra-plugin-stealth');
 const UserAgent = require('user-agents');
 const userAgent = new UserAgent([/Chrome/, { deviceCategory: 'desktop' }]);
 const { JSDOM } = require('jsdom');
-const errorHandler = require('./errorHandler');
+const errorHandler = require('../functions/bot/utils/errorHandler');
 
 Puppeteer.use(Puppeteer_Stealth());
 

@@ -13,16 +13,15 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const adminChatId = [519613720, 1392922267];
 
 const {
-  libraryGenesis,
   searchKeyword,
   downloadFile,
   errorHandler,
   getMetaDOI,
-  scihubold,
   citation,
   sciHub,
   db,
 } = require('./helpers');
+
 const Entity = require('./telegram/entity');
 
 let keyboardMessage = {
@@ -180,6 +179,7 @@ bot.hears('💰 Donation', (ctx) => {
 
 // commands
 bot.start(async (ctx) => {
+  console.log({ from: ctx.from });
   try {
     let chat_id = ctx.message?.chat.id;
     let username = ctx.message?.chat?.username;

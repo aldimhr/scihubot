@@ -2,7 +2,7 @@ const request = require('./request');
 const { JSDOM } = require('jsdom');
 
 const errMessage = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
-const errorHandler = require('./errorHandler');
+const errorHandler = require('../functions/bot/utils/errorHandler');
 
 module.exports = async (url) => {
   console.log('SCIHUB');
