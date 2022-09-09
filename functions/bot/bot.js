@@ -45,9 +45,15 @@ bot.catch((err, ctx) => {
 
 // AWS event handler syntax (https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html)
 exports.handler = async (event) => {
+  // console.log({ event, eventBody: event.body });
+
   try {
-    await bot.handleUpdate(JSON.parse(event.body));
-    return { statusCode: 200, body: '' };
+    if (event.body) {
+      await bot.handleUpdate(JSON.parse(event.body));
+      return { statusCode: 200, body: '' };
+    } else {
+      return { statusCode: 400, body: 'This endpoint is meant for bot and telegram communication' };
+    }
   } catch (e) {
     console.error('error in handler:', e);
     return { statusCode: 400, body: 'This endpoint is meant for bot and telegram communication' };
