@@ -1,4 +1,4 @@
-const { searchKeyword, notifyAdmin, db } = require('../utils');
+const { searchKeyword, notifyAdmin, db, errorHandler } = require('../utils');
 
 const broadcast = async (ctx) => {
   try {
@@ -31,7 +31,7 @@ const broadcast = async (ctx) => {
       return;
     }
   } catch (err) {
-    console.log({ err });
+    errorHandler({ ctx, message: 'actions/command.js/broadcast' });
   }
 };
 
@@ -77,7 +77,7 @@ const keyword = async (ctx) => {
       },
     });
   } catch (err) {
-    notifyAdmin({ ctx, message: 'bot/action/command()' });
+    errorHandler({ ctx, message: 'bot/action/command()' });
   }
 };
 
