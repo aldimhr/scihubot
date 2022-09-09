@@ -6,6 +6,7 @@ const { adminChatId, responseMessages, keyboardMessage } = constants;
 
 module.exports = async (ctx) => {
   try {
+    console.log('start');
     const { id: chat_id, first_name, username } = ctx?.from ?? ctx?.chat;
     let err;
 
