@@ -4,6 +4,8 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const adminChatId = [519613720, 1392922267];
 
 module.exports = ({ err, name, ctx }) => {
+  console.log(`ERROR: ${name}`);
+
   const headers = JSON.stringify(err?.response?.headers, null, '-  ') || null;
   const request = JSON.stringify(err?.request, null, '-  ') || null;
   const config = JSON.stringify(err?.config, null, '-  ') || null;
