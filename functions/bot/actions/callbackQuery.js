@@ -12,18 +12,18 @@ module.exports = async (ctx) => {
   let err;
 
   // wait message
-  const { message_id: waitMessageId } = await ctx.reply(responseMessages.wait).catch((error) => {
+  const { message_id: waitMessageId } = await ctx.telegram.sendMessage(message.chat.id, responseMessages.wait).catch((error) => {
     err = error;
   });
 
-  if (err) return console.log('ERROR bot.on(callback_query)');
+  if (err) return console.log('ERROR bot.on(callback_query) - getting wait message id');
 
   // delete message
   await ctx.telegram.deleteMessage(message.chat.id, messageId).catch((error) => {
     err = error;
   });
 
-  if (err) return console.log('ERROR bot.on(callback_query)');
+  if (err) return console.log('ERROR bot.on(callback_query) - deleting wait message');
 
   // getting file from Sci-Hub
   await sciHub(doi).then(({ data, error }) => {

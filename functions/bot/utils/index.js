@@ -7,6 +7,8 @@ const errorHandler = require('./errorHandler');
 const searchKeyword = require('./keyword');
 const sciHub = require('./sciHub');
 
+const { JSDOM } = require('jsdom');
+
 const notifyAdmin = ({ message, ctx }) => {
   [519613720, 1392922267].forEach((chatId) => {
     ctx.telegram.sendMessage(chatId, message);

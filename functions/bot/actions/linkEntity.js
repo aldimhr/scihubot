@@ -28,8 +28,6 @@ module.exports = async (ctx) => {
     if (text.includes('://doi.org/') && text.includes('http')) {
       // get file link
       await sciHub(text).then(({ data, error }) => {
-        // await libraryGenesis(text).then(({ data, error }) => {
-        // await scihubold(text).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
@@ -37,8 +35,6 @@ module.exports = async (ctx) => {
       doi = `https://${text}`;
       // add http
       await sciHub(`https://${text}`).then(({ data, error }) => {
-        // await libraryGenesis(`https://${text}`).then(({ data, error }) => {
-        // await scihubold(`https://${text}`).then(({ data, error }) => {
         fileURL = data;
         errorGettingFile = error;
       });
@@ -50,8 +46,6 @@ module.exports = async (ctx) => {
         if (data) {
           doi = data;
           await sciHub(data).then(({ data, error }) => {
-            // await libraryGenesis(data).then(({ data, error }) => {
-            // await scihubold(data).then(({ data, error }) => {
             fileURL = data;
             errorGettingFile = error;
           });
@@ -110,6 +104,6 @@ module.exports = async (ctx) => {
       }
     );
   } catch (err) {
-    errorHandler({ err, name: 'app.js/bot.entity()' });
+    errorHandler({ err, name: 'bot.entity()' });
   }
 };
