@@ -1,4 +1,4 @@
-const responseMessages = {
+exports.responseMessages = {
   welcome: `
 Welcome to Sci-Hub Bot!
 
@@ -43,10 +43,8 @@ Thankyou!`,
   null: 'null message',
 };
 
-const keyboardMessage = {
+exports.keyboardMessage = {
   default: [['⚓️ Search Document'], ['💰 Donation', '🤠 Support']],
 };
 
-const adminChatId = [519613720, 1392922267];
-
-module.exports = { responseMessages, keyboardMessage, adminChatId };
+exports.adminChatId = [519613720, 1392922267];

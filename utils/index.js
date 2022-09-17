@@ -1,11 +1,11 @@
 const axios = require('axios');
-const citation = require('./citation');
-const contants = require('./constans');
-const db = require('./database');
-const downloadFile = require('./downloadFile');
-const errorHandler = require('./errorHandler');
-const searchKeyword = require('./keyword');
-const sciHub = require('./sciHub');
+const citation = require('./citation.js');
+const contants = require('./constans.js');
+const db = require('./database.js');
+const downloadFile = require('./downloadFile.js');
+const errorHandler = require('./errorHandler.js');
+const searchKeyword = require('./keyword.js');
+const sciHub = require('./sciHub.js');
 
 const { JSDOM } = require('jsdom');
 
@@ -38,14 +38,4 @@ let getMetaDOI = async (url, ctx) => {
     });
 };
 
-module.exports = {
-  searchKeyword,
-  downloadFile,
-  errorHandler,
-  notifyAdmin,
-  getMetaDOI,
-  citation,
-  contants,
-  sciHub,
-  db,
-};
+module.exports = { searchKeyword, downloadFile, errorHandler, notifyAdmin, getMetaDOI, citation, contants, sciHub, db };

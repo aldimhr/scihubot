@@ -1,5 +1,5 @@
-const { sciHub, getMetaDOI, downloadFile, citation, errorHandler } = require('../utils');
-const { responseMessages, keyboardMessage } = require('../utils/constans');
+const { sciHub, getMetaDOI, downloadFile, citation, errorHandler } = require('../utils/index.js');
+const { responseMessages, keyboardMessage } = require('../utils/constans.js');
 
 module.exports = async (ctx) => {
   try {

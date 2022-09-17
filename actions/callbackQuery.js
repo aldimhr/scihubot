@@ -1,5 +1,5 @@
-const { sciHub, citation, downloadFile } = require('../utils');
-const { responseMessages, keyboardMessage } = require('../utils/constans');
+const { sciHub, citation, downloadFile } = require('../utils/index.js');
+const { responseMessages, keyboardMessage } = require('../utils/constans.js');
 
 module.exports = async (ctx) => {
   const update = ctx.update;

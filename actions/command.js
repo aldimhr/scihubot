@@ -1,6 +1,6 @@
-const { searchKeyword, notifyAdmin, db, errorHandler } = require('../utils');
+const { searchKeyword, notifyAdmin, db, errorHandler } = require('../utils/index.js');
 
-const broadcast = async (ctx) => {
+exports.broadcast = async (ctx) => {
   try {
     const message = ctx.message;
     const text = message.text;
@@ -35,7 +35,7 @@ const broadcast = async (ctx) => {
   }
 };
 
-const keyword = async (ctx) => {
+exports.keyword = async (ctx) => {
   try {
     const message = ctx.message;
     const text = message.text;
@@ -80,5 +80,3 @@ const keyword = async (ctx) => {
     errorHandler({ ctx, message: 'bot/action/command()' });
   }
 };
-
-module.exports = { broadcast, keyword };

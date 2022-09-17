@@ -1,4 +1,4 @@
-const { responseMessages } = require('../utils/constans');
+const { responseMessages } = require('../utils/constans.js');
 
 module.exports = (ctx) => {
   ctx
