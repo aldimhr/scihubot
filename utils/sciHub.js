@@ -1,10 +1,10 @@
 const { JSDOM } = require('jsdom');
 const axios = require('axios');
-const errorHandler = require('./errorHandler');
+const errorHandler = require('./errorHandler.js');
 
 const errMessage = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
-var FormData = require('form-data');
+const FormData = require('form-data');
 
 module.exports = async (doi) => {
   try {
@@ -16,8 +16,7 @@ module.exports = async (doi) => {
       method: 'post',
       url: 'https://sci-hub.se/',
       headers: {
-        Cookie:
-          '__ddg1_=LDjve9X61F4WnkyKKOlH; refresh=1662608614.5827; session=a0d7535c5f0fc45c27efd9a11d044951',
+        Cookie: '__ddg1_=LDjve9X61F4WnkyKKOlH; refresh=1662608614.5827; session=a0d7535c5f0fc45c27efd9a11d044951',
         ...data.getHeaders(),
       },
       data: data,

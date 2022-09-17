@@ -1,5 +1,5 @@
-const { notifyAdmin, errorHandler, db } = require('../utils');
-const { responseMessages } = require('../utils/constans');
+const { notifyAdmin, errorHandler, db } = require('../utils/index.js');
+const { responseMessages } = require('../utils/constans.js');
 
 const postpone = {
   status: false,

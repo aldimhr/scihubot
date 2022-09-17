@@ -1,5 +1,5 @@
 const axios = require('axios');
-const errorHandler = require('./errorHandler');
+const errorHandler = require('./errorHandler.js');
 
 module.exports = async (query) => {
   return await axios

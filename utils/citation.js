@@ -1,7 +1,7 @@
 const axios = require('axios');
-const errorHandler = require('./errorHandler');
+const errorHandler = require('./errorHandler.js');
 
-module.exports = async (doi) => {
+module.exports = async function (doi) {
   return await axios
     .get(`https://citation.crosscite.org/format?doi=${doi}&style=apa&lang=en-US`)
     .then(({ data }) => {

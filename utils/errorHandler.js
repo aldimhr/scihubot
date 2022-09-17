@@ -1,7 +1,8 @@
+require('dotenv').config();
 const { Telegraf } = require('telegraf');
-const bot = new Telegraf(process.env.BOT_TOKEN);
 
 const adminChatId = [519613720, 1392922267];
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
 module.exports = ({ err, name, ctx }) => {
   console.log(`ERROR: ${name}`);

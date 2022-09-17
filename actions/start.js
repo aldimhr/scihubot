@@ -1,5 +1,5 @@
-const constants = require('../utils/constans');
-const utils = require('../utils');
+const constants = require('../utils/constans.js');
+const utils = require('../utils/index.js');
 
 const { errorHandler, downloadFile, notifyAdmin, citation, keyword, sciHub, db } = utils;
 const { adminChatId, responseMessages, keyboardMessage } = constants;
