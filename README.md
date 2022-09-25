@@ -6,6 +6,20 @@ In line with the goals of Sci-Hub, this bot was created to make it easier for ev
 
 ## Instalation
 
-```
+```bash
 pnpm install
 ```
+
+## Build
+
+```bash
+pnpm build
+```
+
+## To-Do
+
+- [ ] Fixing "search article by keyword" (not working on AWS)
+- [x] Auto download if response is PDF binary
+- [x] Fixing "search article by publisher link"
+- [x] Looking for an alternative to Heroku (currently using AWS)
+- [x] Looking for an alternative to JSDOM (currently using node-html-parser)
