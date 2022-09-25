@@ -15,7 +15,7 @@ const { errorHandler } = require('./utils/index.js');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // set webhook
-bot.telegram.setWebhook(process.env.BOT_WEBHOOK);
+// bot.telegram.setWebhook(process.env.BOT_WEBHOOK);
 
 const donationAction = donation;
 const searchAction = search;
