@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "",
   "scripts": {
+    "dev": "nodemon bot",
     "build": "rm -rf ./dist && esbuild bot.js --bundle --outdir=dist --platform=node",
     "test": "jest",
     "test:watch": "jest --watch"
