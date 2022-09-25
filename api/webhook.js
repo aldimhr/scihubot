@@ -1,16 +1,16 @@
 const { Telegraf } = require('telegraf');
 
-const { support, search, donation } = require('./actions/menu.js');
-const { broadcast, keyword } = require('./actions/command.js');
-const callbackQueryAction = require('./actions/callbackQuery.js');
-const textMessageAction = require('./actions/textMessage.js');
-const middlewareAction = require('./actions/middleware.js');
-const linkEntityAction = require('./actions/linkEntity.js');
-const startAction = require('./actions/start.js');
-const mediaAction = require('./actions/media.js');
-const helpAction = require('./actions/help.js');
+const { support, search, donation } = require('../actions/menu.js');
+const { broadcast, keyword } = require('../actions/command.js');
+const callbackQueryAction = require('../actions/callbackQuery.js');
+const textMessageAction = require('../actions/textMessage.js');
+const middlewareAction = require('../actions/middleware.js');
+const linkEntityAction = require('../actions/linkEntity.js');
+const startAction = require('../actions/start.js');
+const mediaAction = require('../actions/media.js');
+const helpAction = require('../actions/help.js');
 
-const { errorHandler } = require('./utils/index.js');
+const { errorHandler } = require('../utils/index.js');
 
 const donationAction = donation;
 const searchAction = search;
@@ -19,11 +19,10 @@ const broadcastAction = broadcast;
 const keywordAction = keyword;
 
 module.exports = async (req, res) => {
+  const bot = new Telegraf(process.env.BOT_TOKEN);
   const { body } = req;
 
   if (body?.message) {
-    const bot = new Telegraf(process.env.BOT_TOKEN);
-
     bot.use((ctx, next) => middlewareAction(ctx, next));
     bot.start((ctx) => startAction(ctx));
     bot.help((ctx) => helpAction(ctx));

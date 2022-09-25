@@ -14,6 +14,9 @@ const { errorHandler } = require('./utils/index.js');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
+// set webhook
+bot.telegram.setWebhook(process.env.BOT_WEBHOOK);
+
 const donationAction = donation;
 const searchAction = search;
 const supportAction = support;
@@ -30,10 +33,16 @@ bot.hears('💰 Donation', (ctx) => donationAction(ctx));
 bot.hears('🤠 Support', (ctx) => supportAction(ctx));
 
 bot.command('broadcast', async (ctx) => await broadcastAction(ctx));
-bot.command('kw', async (ctx) => await keywordAction(ctx));
+
+// ==============================================================
+bot.command('kw', async (ctx) => {
+  ctx.reply('Search for articles based on keywords still under repair');
+  // await keywordAction(ctx)
+});
+// bot.on('callback_query', async (ctx) => await callbackQueryAction(ctx));
+// ==============================================================
 
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => mediaAction(ctx));
-bot.on('callback_query', async (ctx) => await callbackQueryAction(ctx));
 
 bot.entity(['url', 'text_link'], async (ctx) => await linkEntityAction(ctx));
 
@@ -44,4 +53,23 @@ bot.catch((err, ctx) => {
   return console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
 });
 
-bot.launch();
+// bot.launch();
+
+/* AWS Lambda handler function */
+exports.handler = (event, context, callback) => {
+  try {
+    const body = JSON.parse(event.body); // get data passed to us
+
+    if (body.message) {
+      bot.handleUpdate(body); // make Telegraf process that data
+    }
+  } catch (error) {
+    console.log({ name: 'Error: aws handler', error });
+  } finally {
+    // return something for webhook, so it doesn't try to send same stuff again
+    return callback(null, {
+      statusCode: 200,
+      body: 'OK',
+    });
+  }
+};

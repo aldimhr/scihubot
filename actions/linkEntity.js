@@ -1,87 +1,122 @@
 const { sciHub, getMetaDOI, downloadFile, citation, errorHandler } = require('../utils/index.js');
 const { responseMessages, keyboardMessage } = require('../utils/constans.js');
+const { isPDF } = require('../utils/isPDF.js');
+const axios = require('axios');
+
+const checkInputText = (text) => {
+  if (text.includes('://doi.org/') && text.includes('http')) {
+    return text;
+  } else if (text.includes('doi.org/') && !text.includes('http')) {
+    return `https://${text}`;
+  }
+
+  return text;
+};
+
+const getFileFromScihub = async ({ url }) => {
+  try {
+    // get file link
+    const { data: scihubData, error: scihubError } = await sciHub(url);
+    if (scihubError) return { data: null, citation: null, error: 'scihub()' };
+
+    // download file
+    const { data: downloadData, error: downloadError } = await downloadFile(scihubData);
+    if (downloadError) return { data: null, citation: null, error: 'downloadFile()' };
+
+    // get citation
+    let { data: citationData } = await citation(url);
+
+    return { data: downloadData, citation: citationData, error: false };
+  } catch (error) {
+    return { data: null, citation: null, error: 'getFileFromScihub()' };
+  }
+};
+
+const getFileFromMetaDOI = async ({ url, ctx }) => {
+  try {
+    const { data: getMetaDOIData, error: getMetaDOIError } = await getMetaDOI(url, ctx);
+    if (getMetaDOIError) return { data: null, citation: null, error: 'getMetaDOI()' };
+
+    const { data: scihubData, error: scihubError } = await sciHub(getMetaDOIData);
+    if (scihubError) return { data: null, citation: null, error: 'sciHub()' };
+
+    const { data: downloadData, error: downloadError } = await downloadFile(scihubData);
+    if (downloadError) return { data: null, citation: null, error: 'downloadFile()' };
+
+    // get citation
+    let { data: citationData } = await citation(getMetaDOIData);
+
+    return { data: downloadData, citation: citationData, error: false };
+  } catch (error) {
+    return { data: null, citation: null, error: 'getFileFromMetaDOI()' };
+  }
+};
+
+const checkResponseData = async (link) => {
+  try {
+    const { data: responseData } = await axios({
+      method: 'get',
+      url: link,
+      responseType: 'arraybuffer',
+    });
+
+    if (isPDF(responseData)) return { data: responseData, error: false };
+
+    return { data: null, error: 'response is not PDF file' };
+  } catch (error) {
+    return { data: null, error: 'checkResponseData' };
+  }
+};
 
 module.exports = async (ctx) => {
   try {
-    let message = ctx.message;
-    let text = message?.text;
-    let chat_id = message?.chat.id;
-    let entities = message?.entities;
+    const text = checkInputText(ctx.message?.text);
+    const chatId = ctx.message?.chat.id;
+    const entities = ctx.message?.entities;
+    const messageId = ctx.message?.message_id;
 
-    // if many links in one message
+    // check if many links in one message
     if (entities.length > 1) {
       return ctx.reply('Please enter the links one by one', {
-        reply_to_message_id: message.message_id,
+        reply_to_message_id: messageId,
       });
     }
 
-    // wait message
-    let { message_id } = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
-      reply_to_message_id: message.message_id,
+    // send wait message
+    let { message_id: waitMessageId } = await ctx.telegram.sendMessage(chatId, responseMessages.wait, {
+      reply_to_message_id: messageId,
     });
 
-    let fileURL;
-    let errorGettingFile;
-    let doi = text;
+    let fileDocument;
+    let hasError;
+    let citationArticle = '';
 
-    //filter text
-    if (text.includes('://doi.org/') && text.includes('http')) {
-      // get file link
-      await sciHub(text).then(({ data, error }) => {
-        fileURL = data;
-        errorGettingFile = error;
-      });
-    } else if (text.includes('doi.org/') && !text.includes('http')) {
-      doi = `https://${text}`;
-      // add http
-      await sciHub(`https://${text}`).then(({ data, error }) => {
-        fileURL = data;
-        errorGettingFile = error;
-      });
+    if (text.includes('doi.org')) {
+      const { data, citation, error } = await getFileFromScihub({ url: text });
+      if (error) hasError = error;
+
+      citationArticle = citation;
+      fileDocument = data;
     } else {
-      // get meta
-      await getMetaDOI(text, ctx).then(async ({ data, error }) => {
-        errorGettingFile = error;
+      const { data, citation, error: getFileFromMetaDOIError } = await getFileFromMetaDOI({ url: text, ctx });
+      citationArticle = citation;
+      fileDocument = data;
 
-        if (data) {
-          doi = data;
-          await sciHub(data).then(({ data, error }) => {
-            fileURL = data;
-            errorGettingFile = error;
-          });
-        }
-      });
+      if (getFileFromMetaDOIError) {
+        let { data: responseData, error: responseError } = await checkResponseData(text);
+        if (responseError) hasError = responseError;
+
+        citationArticle = null;
+        fileDocument = responseData;
+      }
     }
-
-    console.log({ fileURL, errorGettingFile });
-    if (errorGettingFile) {
-      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-        reply_to_message_id: message.message_id,
-      });
-      return await ctx.telegram.deleteMessage(chat_id, message_id).catch((err) => console.log('ERROR bot.entity', err));
-    }
-
-    // download file
-    const dFile = await downloadFile(fileURL);
-    console.log({ dFile });
-    if (dFile.error) {
-      ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-        reply_to_message_id: message.message_id,
-      });
-      return await ctx.telegram.deleteMessage(chat_id, message_id).catch((err) => console.log('ERROR bot.entity', err));
-    }
-
-    // get citation
-    let { data: citationData, error: citationError } = await citation(doi);
-    console.log({ citationData, citationError });
 
     // delete wait message
-    await ctx.telegram.deleteMessage(chat_id, message_id);
+    await ctx.telegram.deleteMessage(chatId, waitMessageId);
 
-    // send error message
-    if (errorGettingFile) {
+    if (hasError || !fileDocument) {
       return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-        reply_to_message_id: message.message_id,
+        reply_to_message_id: messageId,
       });
     }
 
@@ -91,12 +126,12 @@ module.exports = async (ctx) => {
     // send file to user
     ctx.replyWithDocument(
       {
-        source: dFile.data,
-        filename: `${doi}.pdf`,
+        source: fileDocument,
+        filename: `${text}.pdf`,
       },
       {
-        caption: citationData || '',
-        reply_to_message_id: message.message_id,
+        caption: citationArticle || '',
+        reply_to_message_id: messageId,
         reply_markup: {
           resize_keyboard: true,
           keyboard: keyboardMessage.default,

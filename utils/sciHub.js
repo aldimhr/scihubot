@@ -1,6 +1,6 @@
-const { JSDOM } = require('jsdom');
 const axios = require('axios');
 const errorHandler = require('./errorHandler.js');
+var HTMLParser = require('node-html-parser');
 
 const errMessage = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
@@ -31,14 +31,15 @@ module.exports = async (doi) => {
       });
 
     // get pdf linnk
-    const { document } = new JSDOM(requestPDF).window;
-    let elementPDF = document.getElementById('pdf');
+    const document = HTMLParser.parse(requestPDF);
+    const elementPDF = document.getElementById('pdf');
+    const elementSrc = elementPDF.getAttribute('src');
 
-    if (elementPDF.src.includes('sci-hub')) {
-      return { data: 'https:' + elementPDF.src, error: false };
+    if (elementSrc.includes('sci-hub')) {
+      return { data: 'https:' + elementSrc, error: false };
     }
 
-    return { data: 'https://sci-hub.ru' + elementPDF.src, error: false };
+    return { data: 'https://sci-hub.ru' + elementSrc, error: false };
   } catch (err) {
     errorHandler({ err, name: 'helpers/sciHub.js' });
     return {
