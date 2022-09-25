@@ -26,7 +26,7 @@ pnpm dev
 
 ---
 
-note:
+**_note:_**
 
 - development command uses Nodemon, make sure you install it
 - uncomment bot.launch(); in bot.js before running it locally
