@@ -31,6 +31,9 @@ https://www.nature.com/articles/laban.665
 
   donation: `Your support matters. This project survives on the kindness & generosity of your contributions.
 
+[KO-FI]
+https://ko-fi.com/aldimhr
+
 [ETH] [BNB]
 0xC4cB89575A39Cb1A7066BB855B4FdA5Ce3cEE64a
 
