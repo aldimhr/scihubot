@@ -29,7 +29,7 @@ bot.start((ctx) => startAction(ctx));
 bot.help((ctx) => helpAction(ctx));
 
 bot.hears('⚓️ Search Document', (ctx) => searchAction(ctx));
-bot.hears('💰 Donation', (ctx) => donationAction(ctx));
+bot.hears('💰 Donate', (ctx) => donationAction(ctx));
 bot.hears('🤠 Support', (ctx) => supportAction(ctx));
 
 bot.command('broadcast', async (ctx) => await broadcastAction(ctx));

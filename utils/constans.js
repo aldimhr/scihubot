@@ -47,7 +47,7 @@ Thankyou!`,
 };
 
 exports.keyboardMessage = {
-  default: [['⚓️ Search Document'], ['💰 Donation', '🤠 Support']],
+  default: [['⚓️ Search Document'], ['💰 Donate', '🤠 Support']],
 };
 
 exports.adminChatId = [519613720, 1392922267];
