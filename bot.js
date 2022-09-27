@@ -36,7 +36,7 @@ bot.command('broadcast', async (ctx) => await broadcastAction(ctx));
 
 // ==============================================================
 bot.command('kw', async (ctx) => {
-  ctx.reply('Search for articles based on keywords still under repair');
+  ctx.reply('Search for articles based on keywords still under repair\n\nSubscribe to x0projects channel in Telegram: @x0projects');
   // await keywordAction(ctx)
 });
 // bot.on('callback_query', async (ctx) => await callbackQueryAction(ctx));
