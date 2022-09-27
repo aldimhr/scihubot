@@ -22,7 +22,7 @@ module.exports = async (doi) => {
       data: data,
     };
 
-    const { data: requestPDF } = await axios(config);
+    const { data: requestPDF } = await axios(config, { withCredentials: true });
 
     // get pdf linnk
     const document = HTMLParser.parse(requestPDF);
