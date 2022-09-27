@@ -4,7 +4,7 @@ const { keyboardMessage, responseMessages } = require('../utils/constans.js');
 module.exports = async (ctx) => {
   const message = ctx.message;
   const chat_id = message.chat.id;
-  const text = message.text;
+  let text = message.text;
 
   let doi;
   if (text.toLowerCase().includes('doi:')) {
