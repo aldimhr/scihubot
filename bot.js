@@ -15,7 +15,7 @@ const { errorHandler } = require('./utils/index.js');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // set webhook
-bot.telegram.setWebhook(process.env.BOT_WEBHOOK);
+// bot.telegram.setWebhook(process.env.BOT_WEBHOOK);
 
 const donationAction = donation;
 const searchAction = search;
@@ -29,14 +29,14 @@ bot.start((ctx) => startAction(ctx));
 bot.help((ctx) => helpAction(ctx));
 
 bot.hears('⚓️ Search Document', (ctx) => searchAction(ctx));
-bot.hears('💰 Donation', (ctx) => donationAction(ctx));
+bot.hears('💰 Donate', (ctx) => donationAction(ctx));
 bot.hears('🤠 Support', (ctx) => supportAction(ctx));
 
 bot.command('broadcast', async (ctx) => await broadcastAction(ctx));
 
 // ==============================================================
 bot.command('kw', async (ctx) => {
-  ctx.reply('Search for articles based on keywords still under repair');
+  ctx.reply('Search for articles based on keywords still under repair\n\nSubscribe to x0projects channel in Telegram: @x0projects');
   // await keywordAction(ctx)
 });
 // bot.on('callback_query', async (ctx) => await callbackQueryAction(ctx));

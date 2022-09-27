@@ -10,11 +10,28 @@ In line with the goals of Sci-Hub, this bot was created to make it easier for ev
 pnpm install
 ```
 
-## Build
+## Development
+
+Build command
 
 ```bash
 pnpm build
 ```
+
+Development command
+
+```bash
+pnpm dev
+```
+
+---
+
+**_note:_**
+
+- development command uses Nodemon, make sure you install it
+- uncomment bot.launch(); in bot.js before running it locally
+
+---
 
 ## To-Do
 

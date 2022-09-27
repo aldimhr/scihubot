@@ -16,7 +16,7 @@ const checkInputText = (text) => {
 const getFileFromScihub = async ({ url }) => {
   try {
     // get file link
-    const { data: scihubData, error: scihubError } = await sciHub(url);
+    const { data: scihubData, citation: scihubCitation, error: scihubError } = await sciHub(url);
     if (scihubError) return { data: null, citation: null, error: 'scihub()' };
 
     // download file
@@ -24,9 +24,9 @@ const getFileFromScihub = async ({ url }) => {
     if (downloadError) return { data: null, citation: null, error: 'downloadFile()' };
 
     // get citation
-    let { data: citationData } = await citation(url);
+    // let { data: citationData } = await citation(url);
 
-    return { data: downloadData, citation: citationData, error: false };
+    return { data: downloadData, citation: scihubCitation, error: false };
   } catch (error) {
     return { data: null, citation: null, error: 'getFileFromScihub()' };
   }
@@ -34,37 +34,32 @@ const getFileFromScihub = async ({ url }) => {
 
 const getFileFromMetaDOI = async ({ url, ctx }) => {
   try {
+    // get DOI from meta tag
     const { data: getMetaDOIData, error: getMetaDOIError } = await getMetaDOI(url, ctx);
     if (getMetaDOIError) return { data: null, citation: null, error: 'getMetaDOI()' };
 
-    const { data: scihubData, error: scihubError } = await sciHub(getMetaDOIData);
-    if (scihubError) return { data: null, citation: null, error: 'sciHub()' };
+    const { data: scihubData, citation: scihubCitation, error: scihubError } = await getFileFromScihub({ url: getMetaDOIData });
+    if (scihubError) return { data: null, citation: null, error: 'getFileFromMetaDOI/getFileFromScihub()' };
 
-    const { data: downloadData, error: downloadError } = await downloadFile(scihubData);
-    if (downloadError) return { data: null, citation: null, error: 'downloadFile()' };
-
-    // get citation
-    let { data: citationData } = await citation(getMetaDOIData);
-
-    return { data: downloadData, citation: citationData, error: false };
+    return { data: scihubData, citation: scihubCitation, error: false };
   } catch (error) {
     return { data: null, citation: null, error: 'getFileFromMetaDOI()' };
   }
 };
 
-const checkResponseData = async (link) => {
+const checkResponseData = async (url) => {
   try {
     const { data: responseData } = await axios({
       method: 'get',
-      url: link,
+      url: url,
       responseType: 'arraybuffer',
     });
 
     if (isPDF(responseData)) return { data: responseData, error: false };
 
-    return { data: null, error: 'response is not PDF file' };
+    return { data: null, error: 'response data is not PDF file' };
   } catch (error) {
-    return { data: null, error: 'checkResponseData' };
+    return { data: null, error: 'checkResponseData()' };
   }
 };
 
