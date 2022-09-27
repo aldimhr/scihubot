@@ -16,7 +16,7 @@ const checkInputText = (text) => {
 const getFileFromScihub = async ({ url }) => {
   try {
     // get file link
-    const { data: scihubData, error: scihubError } = await sciHub(url);
+    const { data: scihubData, citation: scihubCitation, error: scihubError } = await sciHub(url);
     if (scihubError) return { data: null, citation: null, error: 'scihub()' };
 
     // download file
@@ -24,9 +24,9 @@ const getFileFromScihub = async ({ url }) => {
     if (downloadError) return { data: null, citation: null, error: 'downloadFile()' };
 
     // get citation
-    let { data: citationData } = await citation(url);
+    // let { data: citationData } = await citation(url);
 
-    return { data: downloadData, citation: citationData, error: false };
+    return { data: downloadData, citation: scihubCitation, error: false };
   } catch (error) {
     return { data: null, citation: null, error: 'getFileFromScihub()' };
   }

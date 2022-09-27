@@ -26,18 +26,24 @@ module.exports = async (doi) => {
 
     // get pdf linnk
     const document = HTMLParser.parse(requestPDF);
-    const elementPDF = document.getElementById('pdf');
-    const elementSrc = elementPDF.getAttribute('src');
+    const elementPDF = document?.getElementById('pdf');
+    const elementSrc = elementPDF?.getAttribute('src');
+    if (!elementSrc) throw new Error('File not found');
+
+    // get citation
+    const citationDiv = document.getElementById('citation');
+    const citation = citationDiv.innerText;
 
     if (elementSrc.includes('sci-hub')) {
-      return { data: 'https:' + elementSrc, error: false };
+      return { data: 'https:' + elementSrc, citation: citation, error: false };
     }
 
-    return { data: 'https://sci-hub.ru' + elementSrc, error: false };
+    return { data: 'https://sci-hub.ru' + elementSrc, citation: citation, error: false };
   } catch (err) {
     errorHandler({ err, name: 'helpers/sciHub.js' });
     return {
       data: null,
+      citation: null,
       error: errMessage,
     };
   }
