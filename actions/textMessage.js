@@ -4,17 +4,18 @@ const { keyboardMessage, responseMessages } = require('../utils/constans.js');
 module.exports = async (ctx) => {
   const message = ctx.message;
   const chat_id = message.chat.id;
+  const text = message.text;
 
   let doi;
-  let fileURL;
-  let errorGettingFile;
-  let text = message.text;
-
   if (text.toLowerCase().includes('doi:')) {
+    // pattern : DOI: doi.number/number
     doi = `http://doi.org/${text.toLowerCase().split('doi:').join('').trim()}`;
+  } else if (text.split(' ').length === 2 && text.split(' ')[0].toLowerCase().includes('doi')) {
+    // pattern : DOI doi.number/number
+    doi = `http://doi.org/${text.toLowerCase().split('doi').join('').trim()}`;
   } else if (text.includes('/') && text.includes('.') && text.split(' ').length === 1) {
+    // pattern : doi.number/number
     if (text[0] === '/') text = text.substring(1);
-
     doi = `http://doi.org/${text}`;
   }
 
@@ -26,13 +27,10 @@ module.exports = async (ctx) => {
   });
 
   // getting file
-  await sciHub(doi).then(({ data, error }) => {
-    fileURL = data;
-    errorGettingFile = error;
-  });
+  const { data: scihubData, citation: scihubCitation, error: scihubError } = await sciHub(doi);
 
   // send error message
-  if (errorGettingFile) {
+  if (scihubError) {
     ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
       reply_to_message_id: message.message_id,
     });
@@ -40,17 +38,13 @@ module.exports = async (ctx) => {
   }
 
   // download file
-  const dFile = await downloadFile(fileURL);
+  const dFile = await downloadFile(scihubData);
   if (dFile.error) {
     ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
       reply_to_message_id: message.message_id,
     });
     return await ctx.telegram.deleteMessage(chat_id, message_id);
   }
-
-  // get citation
-  let { data: citationData, error: citationError } = await citation(doi);
-  console.log({ citationData, citationError });
 
   // delete wait message
   await ctx.telegram.deleteMessage(chat_id, message_id);
@@ -65,7 +59,7 @@ module.exports = async (ctx) => {
       filename: `${doi}.pdf`,
     },
     {
-      caption: citationData || '',
+      caption: scihubCitation || '',
       reply_to_message_id: message.message_id,
       reply_markup: {
         resize_keyboard: true,
