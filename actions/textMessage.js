@@ -1,6 +1,7 @@
 const { sciHub, downloadFile, citation, downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
+const { buildCaption } = require('../utils/caption.js');
 const ProgressMessage = require('../utils/progress.js');
 
 module.exports = async (ctx) => {
@@ -95,7 +96,7 @@ module.exports = async (ctx) => {
   ctx.replyWithDocument(
     { source: result.data, filename: `${normalizedDOI.replace(/\//g, '_')}.pdf` },
     {
-      caption: result.citation || (result.cached ? '💾 From cache' : ''),
+      caption: buildCaption(result.citation, { cached: result.cached }),
       reply_to_message_id: message.message_id,
     }
   ).then(() => console.log('[TEXT] PDF sent successfully'))

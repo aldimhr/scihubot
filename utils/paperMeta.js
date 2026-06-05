@@ -125,6 +125,9 @@ function buildKeyboard(doi) {
         { text: '⬇️ Download PDF', callback_data: `dl:${doi}` },
         { text: '📎 Open DOI', url: `https://doi.org/${doi}` },
       ],
+      [
+        { text: '📢 Updates & new bots', url: 'https://t.me/x0projects' },
+      ],
     ],
   };
 }

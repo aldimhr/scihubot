@@ -1,5 +1,6 @@
 const { sciHub, downloadFile, downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
+const { buildCaption } = require('../utils/caption.js');
 const ProgressMessage = require('../utils/progress.js');
 
 /**
@@ -39,7 +40,7 @@ module.exports = async (ctx) => {
 
     await ctx.replyWithDocument(
       { source: cached, filename },
-      { caption: `📄 ${doi}`, reply_to_message_id: messageId }
+      { caption: buildCaption(`📄 ${doi}`), reply_to_message_id: messageId }
     ).catch(e => console.error('[DL-CB] Failed to send cached PDF:', e.message));
 
     // Restore info card
@@ -82,7 +83,7 @@ module.exports = async (ctx) => {
   await ctx.replyWithDocument(
     { source: result.data, filename },
     {
-      caption: result.citation || `📄 ${doi}`,
+      caption: buildCaption(result.citation || `📄 ${doi}`),
       reply_to_message_id: messageId,
     }
   ).catch(e => console.error('[DL-CB] Failed to send PDF:', e.message));
@@ -99,14 +100,7 @@ async function restoreInfoCard(ctx, chatId, messageId, doi) {
   const { meta } = await fetchMeta(doi);
   if (meta) {
     const card = formatCard(meta);
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '⬇️ Download PDF', callback_data: `dl:${doi}` },
-          { text: '📎 Open DOI', url: `https://doi.org/${doi}` },
-        ],
-      ],
-    };
+    const keyboard = buildKeyboard(doi);
     await ctx.telegram.editMessageText(chatId, messageId, null, card, {
       parse_mode: 'Markdown',
       reply_markup: keyboard,
