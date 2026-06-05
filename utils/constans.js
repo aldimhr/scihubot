@@ -41,7 +41,7 @@ https://ko-fi.com/aldimhr
 bc1q3hg8p8sg54vade6fl02y55vlcqu2zyw4h93vc0
 
 Thankyou!`,
-  support: 'For any question or business inquiries please contact @x0code',
+  support: 'For any question or business inquiries please contact @x0codd',
   wait: '🕵‍♀️ Searching your file...',
   null: 'null message',
 };
