@@ -4,7 +4,7 @@ Welcome to Sci-Hub Bot!
 
 How does this bot work? Drop a DOI or Publisher URL below, or you can search by keyword by using "/kw" command before the keyword you want to search for. Use the /help command to find out more.
 
-Developed by: @x0projects
+Powered by Sci-Hub
   `,
 
   help: `

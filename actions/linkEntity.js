@@ -115,9 +115,6 @@ module.exports = async (ctx) => {
       });
     }
 
-    // subscribe cahnnel
-    ctx.reply('I have this article!\n\nSubscribe to x0projects channel in Telegram: @x0projects');
-
     // send file to user
     ctx.replyWithDocument(
       {

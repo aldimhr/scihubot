@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { Telegraf } = require('telegraf');
 
 const { support, search, donation } = require('./actions/menu.js');
@@ -13,9 +14,6 @@ const helpAction = require('./actions/help.js');
 const { errorHandler } = require('./utils/index.js');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
-
-// set webhook
-// bot.telegram.setWebhook(process.env.BOT_WEBHOOK);
 
 const donationAction = donation;
 const searchAction = search;
@@ -34,13 +32,9 @@ bot.hears('🤠 Support', (ctx) => supportAction(ctx));
 
 bot.command('broadcast', async (ctx) => await broadcastAction(ctx));
 
-// ==============================================================
 bot.command('kw', async (ctx) => {
-  ctx.reply('Search for articles based on keywords still under repair\n\nSubscribe to x0projects channel in Telegram: @x0projects');
-  // await keywordAction(ctx)
+  ctx.reply('Search for articles based on keywords still under repair');
 });
-// bot.on('callback_query', async (ctx) => await callbackQueryAction(ctx));
-// ==============================================================
 
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => mediaAction(ctx));
 
@@ -50,26 +44,13 @@ bot.on('text', async (ctx) => await textMessageAction(ctx));
 
 bot.catch((err, ctx) => {
   errorHandler({ name: 'app.js/bot.catch()', err });
-  return console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
+  console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
 });
 
-// bot.launch();
+// Launch with long-polling
+bot.launch();
+console.log('🤖 Sci-Hub Bot started');
 
-/* AWS Lambda handler function */
-exports.handler = (event, context, callback) => {
-  try {
-    const body = JSON.parse(event.body); // get data passed to us
-
-    if (body.message) {
-      bot.handleUpdate(body); // make Telegraf process that data
-    }
-  } catch (error) {
-    console.log({ name: 'Error: aws handler', error });
-  } finally {
-    // return something for webhook, so it doesn't try to send same stuff again
-    return callback(null, {
-      statusCode: 200,
-      body: 'OK',
-    });
-  }
-};
+// Graceful shutdown
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));

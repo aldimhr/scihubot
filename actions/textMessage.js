@@ -49,9 +49,6 @@ module.exports = async (ctx) => {
   // delete wait message
   await ctx.telegram.deleteMessage(chat_id, message_id);
 
-  // subscribe cahnnel
-  ctx.reply('I have this article!\n\nSubscribe to x0projects channel in Telegram: @x0projects');
-
   // send file to user
   ctx.replyWithDocument(
     {
