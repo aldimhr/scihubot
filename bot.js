@@ -3,6 +3,7 @@ const https = require('https');
 const http = require('http');
 const { Telegraf } = require('telegraf');
 
+const { adminChatId } = require('./utils/constans.js');
 const { support, search, donation } = require('./actions/menu.js');
 const { broadcast, keyword, status, stats, users, history, ban, unban } = require('./actions/command.js');
 const { handleDonateCallback, handleDonateCommand, handlePreCheckout, handleSuccessfulPayment } = require('./actions/donate.js');
@@ -89,11 +90,32 @@ process.on('uncaughtException', (err) => {
 });
 
 // Register commands in Telegram menu
+// Default commands — visible to ALL users
 bot.telegram.setMyCommands([
   { command: 'start', description: '🚀 Start the bot' },
   { command: 'help', description: '📖 How to use this bot' },
   { command: 'donate', description: '⭐ Support with Telegram Stars' },
-]).catch(() => {});
+], { scope: { type: 'default' } }).catch(e => console.error('setMyCommands default error:', e.message));
+
+// Admin-only commands — visible ONLY in admin chats
+const adminCommands = [
+  { command: 'start', description: '🚀 Start the bot' },
+  { command: 'help', description: '📖 How to use this bot' },
+  { command: 'donate', description: '⭐ Support with Telegram Stars' },
+  { command: 'status', description: '⚡ Server & queue status' },
+  { command: 'stats', description: '📊 Download statistics' },
+  { command: 'users', description: '👥 User list' },
+  { command: 'history', description: '📜 Recent downloads' },
+  { command: 'ban', description: '🚫 Ban a user' },
+  { command: 'unban', description: '✅ Unban a user' },
+  { command: 'broadcast', description: '📢 Broadcast message' },
+];
+adminChatId.forEach((chatId) => {
+  bot.telegram.callApi('setMyCommands', {
+    commands: adminCommands,
+    scope: { type: 'chat', chat_id: String(chatId) },
+  }).catch(e => console.error(`setMyCommands admin ${chatId} error:`, e.message));
+});
 
 // Launch with long-polling
 bot.launch();
