@@ -14,11 +14,7 @@ var HTMLParser = require('node-html-parser');
 const notifyAdmin = ({ message, ctx }) => {
   if (!ctx) return;
   [519613720, 1392922267].forEach((chatId) => {
-    try {
-      ctx.telegram.sendMessage(chatId, message);
-    } catch (e) {
-      // ignore admin notify failures
-    }
+    ctx.telegram.sendMessage(chatId, message).catch(() => {});
   });
 };
 
