@@ -5,6 +5,7 @@ const { Telegraf } = require('telegraf');
 
 const { support, search, donation } = require('./actions/menu.js');
 const { broadcast, keyword, status, stats, users, history, ban, unban } = require('./actions/command.js');
+const { handleDonateCallback, handleDonateCommand, handlePreCheckout, handleSuccessfulPayment } = require('./actions/donate.js');
 const callbackQueryAction = require('./actions/callbackQuery.js');
 const textMessageAction = require('./actions/textMessage.js');
 const middlewareAction = require('./actions/middleware.js');
@@ -39,8 +40,13 @@ bot.start((ctx) => startAction(ctx));
 bot.help((ctx) => helpAction(ctx));
 
 bot.hears('⚓️ Search Document', (ctx) => searchAction(ctx));
-bot.hears('💰 Donate', (ctx) => donationAction(ctx));
+bot.hears('💰 Donate', (ctx) => handleDonateCommand(ctx));
 bot.hears('🤠 Support', (ctx) => supportAction(ctx));
+
+// Telegram Stars donation
+bot.command('donate', async (ctx) => await handleDonateCommand(ctx));
+bot.on('pre_checkout_query', async (ctx) => await handlePreCheckout(ctx));
+bot.on('successful_payment', async (ctx) => await handleSuccessfulPayment(ctx));
 
 bot.command('broadcast', async (ctx) => await broadcastAction(ctx));
 bot.command('status', async (ctx) => await status(ctx));
@@ -55,6 +61,15 @@ bot.command('kw', async (ctx) => {
 });
 
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => mediaAction(ctx));
+
+// Callback queries — route donate buttons vs keyword search results
+bot.on('callback_query', async (ctx) => {
+  const data = ctx.callbackQuery?.data;
+  if (data && data.startsWith('donate_')) {
+    return handleDonateCallback(ctx);
+  }
+  return callbackQueryAction(ctx);
+});
 
 bot.entity(['url', 'text_link'], async (ctx) => await linkEntityAction(ctx));
 
@@ -77,7 +92,7 @@ process.on('uncaughtException', (err) => {
 bot.telegram.setMyCommands([
   { command: 'start', description: '🚀 Start the bot' },
   { command: 'help', description: '📖 How to use this bot' },
-  { command: 'status', description: '📊 Queue & cache status' },
+  { command: 'donate', description: '⭐ Support with Telegram Stars' },
 ]).catch(() => {});
 
 // Launch with long-polling
