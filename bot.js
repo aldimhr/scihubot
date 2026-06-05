@@ -8,6 +8,7 @@ const { support, search, donation } = require('./actions/menu.js');
 const { broadcast, keyword, status, stats, users, history, ban, unban } = require('./actions/command.js');
 const { handleDonateCallback, handleDonateCommand, handlePreCheckout, handleSuccessfulPayment } = require('./actions/donate.js');
 const callbackQueryAction = require('./actions/callbackQuery.js');
+const downloadCallbackAction = require('./actions/downloadCallback.js');
 const textMessageAction = require('./actions/textMessage.js');
 const middlewareAction = require('./actions/middleware.js');
 const linkEntityAction = require('./actions/linkEntity.js');
@@ -63,11 +64,14 @@ bot.command('kw', async (ctx) => {
 
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => mediaAction(ctx));
 
-// Callback queries — route donate buttons vs keyword search results
+// Callback queries — route donate buttons, download buttons, vs keyword search results
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery?.data;
   if (data && data.startsWith('donate_')) {
     return handleDonateCallback(ctx);
+  }
+  if (data && data.startsWith('dl:')) {
+    return downloadCallbackAction(ctx);
   }
   return callbackQueryAction(ctx);
 });

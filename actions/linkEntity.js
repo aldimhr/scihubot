@@ -1,6 +1,7 @@
 const { sciHub, getMetaDOI, downloadFile, citation, errorHandler, downloadQueue, cache } = require('../utils/index.js');
 const { isPDF } = require('../utils/isPDF.js');
 const { recordDownload } = require('../utils/dataStore.js');
+const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
 const ProgressMessage = require('../utils/progress.js');
 const axios = require('axios');
 
@@ -102,11 +103,40 @@ module.exports = async (ctx) => {
       });
     }
 
-    // Create progress message
+    // Extract DOI
+    let doi = null;
+    if (text.includes('doi.org')) {
+      const doiMatch = text.match(/doi\.org\/(.+)/);
+      if (doiMatch) doi = doiMatch[1].replace(/\/+$/, '');
+    }
+
+    // If no DOI from URL, try publisher extraction
+    if (!doi) {
+      const { data: metaDOI } = await getMetaDOI(text);
+      if (metaDOI) {
+        doi = metaDOI.replace(/https?:\/\/doi\.org\//, '').replace(/\/+$/, '');
+      }
+    }
+
+    // If we have a DOI, show info card with download button
+    if (doi) {
+      const { meta, error } = await fetchMeta(doi);
+      if (meta) {
+        const card = formatCard(meta);
+        const keyboard = buildKeyboard(doi);
+        return ctx.reply(card, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard,
+          reply_to_message_id: messageId,
+          disable_web_page_preview: true,
+        });
+      }
+    }
+
+    // Fallback: no DOI or no metadata — direct download (original behavior)
     const progress = new ProgressMessage(ctx, chatId, messageId);
     await progress.update('🕵️ Starting download...');
 
-    // Run download through queue
     const result = await downloadQueue.enqueue(
       () => downloadPipeline({ url: text, progress: (text) => progress.update(text) }),
       async (position, total) => {
@@ -115,7 +145,6 @@ module.exports = async (ctx) => {
       }
     );
 
-    // Delete progress message
     await progress.done();
 
     if (result.error || !result.data) {

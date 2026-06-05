@@ -1,5 +1,6 @@
 const { sciHub, downloadFile, citation, downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
+const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
 const ProgressMessage = require('../utils/progress.js');
 
 module.exports = async (ctx) => {
@@ -27,6 +28,20 @@ module.exports = async (ctx) => {
   // Normalize DOI
   const normalizedDOI = doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '').replace(/\/+$/, '');
   const doiURL = `http://doi.org/${normalizedDOI}`;
+
+  // Try to show info card first
+  const { meta } = await fetchMeta(normalizedDOI);
+  if (meta) {
+    const card = formatCard(meta);
+    const keyboard = buildKeyboard(normalizedDOI);
+    return ctx.reply(card, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard,
+      disable_web_page_preview: true,
+    });
+  }
+
+  // Fallback: no metadata — direct download (original behavior)
 
   // Create progress message
   const progress = new ProgressMessage(ctx, chat_id, message.message_id);
