@@ -30,7 +30,7 @@ const postpone = {
 
 module.exports = async (ctx, next) => {
   try {
-    console.log('===== ===== ===== ===== =====');
+    console.log(`[MSG] type=${ctx.updateType} text=${(ctx.message?.text || '').substring(0, 80)}`);
     let err = false;
 
     if (postpone.status) {

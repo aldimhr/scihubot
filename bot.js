@@ -1,4 +1,6 @@
 require('dotenv').config();
+const https = require('https');
+const http = require('http');
 const { Telegraf } = require('telegraf');
 
 const { support, search, donation } = require('./actions/menu.js');
@@ -13,7 +15,17 @@ const helpAction = require('./actions/help.js');
 
 const { errorHandler } = require('./utils/index.js');
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+// Create HTTP agent with keep-alive and IPv4 preference
+const agent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  family: 4,  // Force IPv4 - avoids IPv6 timeout issues
+  timeout: 60000,
+});
+
+const bot = new Telegraf(process.env.BOT_TOKEN, {
+  telegram: { agent },
+});
 
 const donationAction = donation;
 const searchAction = search;
@@ -45,6 +57,14 @@ bot.on('text', async (ctx) => await textMessageAction(ctx));
 bot.catch((err, ctx) => {
   errorHandler({ name: 'app.js/bot.catch()', err });
   console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
+});
+
+// Prevent crashes on unhandled errors
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err.message);
 });
 
 // Launch with long-polling

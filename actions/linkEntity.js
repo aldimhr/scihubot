@@ -70,6 +70,8 @@ module.exports = async (ctx) => {
     const entities = ctx.message?.entities;
     const messageId = ctx.message?.message_id;
 
+    console.log(`[LINK] Received: ${text}`);
+
     // check if many links in one message
     if (entities.length > 1) {
       return ctx.reply('Please enter the links one by one', {
@@ -78,21 +80,28 @@ module.exports = async (ctx) => {
     }
 
     // send wait message
-    let { message_id: waitMessageId } = await ctx.telegram.sendMessage(chatId, responseMessages.wait, {
-      reply_to_message_id: messageId,
-    });
+    let waitMsg;
+    try {
+      waitMsg = await ctx.telegram.sendMessage(chatId, responseMessages.wait, {
+        reply_to_message_id: messageId,
+      });
+    } catch (e) {
+      console.error('[LINK] Failed to send wait message:', e.message);
+    }
 
     let fileDocument;
     let hasError;
     let citationArticle = '';
 
     if (text.includes('doi.org')) {
+      console.log('[LINK] Processing as doi.org link');
       const { data, citation, error } = await getFileFromScihub({ url: text });
       if (error) hasError = error;
 
       citationArticle = citation;
       fileDocument = data;
     } else {
+      console.log('[LINK] Processing as publisher link (meta DOI)');
       const { data, citation, error: getFileFromMetaDOIError } = await getFileFromMetaDOI({ url: text, ctx });
       citationArticle = citation;
       fileDocument = data;
@@ -107,30 +116,36 @@ module.exports = async (ctx) => {
     }
 
     // delete wait message
-    await ctx.telegram.deleteMessage(chatId, waitMessageId);
+    if (waitMsg) {
+      try {
+        await ctx.telegram.deleteMessage(chatId, waitMsg.message_id);
+      } catch (e) {
+        console.error('[LINK] Failed to delete wait msg:', e.message);
+      }
+    }
 
     if (hasError || !fileDocument) {
+      console.log('[LINK] Error or no file:', hasError);
       return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
         reply_to_message_id: messageId,
       });
     }
 
+    console.log('[LINK] Sending PDF document...');
     // send file to user
     ctx.replyWithDocument(
       {
         source: fileDocument,
-        filename: `${text}.pdf`,
+        filename: `${text.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.pdf`,
       },
       {
         caption: citationArticle || '',
         reply_to_message_id: messageId,
-        reply_markup: {
-          resize_keyboard: true,
-          keyboard: keyboardMessage.default,
-        },
       }
-    );
+    ).then(() => console.log('[LINK] PDF sent successfully'))
+     .catch(e => console.error('[LINK] Failed to send PDF:', e.message));
   } catch (err) {
+    console.error('[LINK] Unhandled error:', err.message);
     errorHandler({ err, name: 'bot.entity()' });
   }
 };
