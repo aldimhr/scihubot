@@ -73,6 +73,13 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err.message);
 });
 
+// Register commands in Telegram menu
+bot.telegram.setMyCommands([
+  { command: 'start', description: '🚀 Start the bot' },
+  { command: 'help', description: '📖 How to use this bot' },
+  { command: 'status', description: '📊 Queue & cache status' },
+]).catch(() => {});
+
 // Launch with long-polling
 bot.launch();
 console.log('🤖 Sci-Hub Bot started');
