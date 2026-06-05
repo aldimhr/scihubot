@@ -45,6 +45,7 @@ bot.help((ctx) => helpAction(ctx));
 bot.hears('⚓️ Search Document', (ctx) => searchAction(ctx));
 bot.hears('💰 Donate', (ctx) => handleDonateCommand(ctx));
 bot.hears('🤠 Support', (ctx) => supportAction(ctx));
+bot.hears('📢 Channel', (ctx) => ctx.reply('📢 Join our channel for updates & new bots:\n\nhttps://t.me/x0projects', { disable_web_page_preview: true }).catch(() => {}));
 
 // Telegram Stars donation
 bot.command('donate', async (ctx) => await handleDonateCommand(ctx));

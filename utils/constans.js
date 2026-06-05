@@ -1,30 +1,33 @@
 exports.responseMessages = {
   welcome: `
-Welcome to Sci-Hub Bot!
+Welcome to Sci-Hub Bot! 📄
 
-How does this bot work? Drop a DOI or Publisher URL below, or you can search by keyword by using "/kw" command before the keyword you want to search for. Use the /help command to find out more.
+Drop a DOI or Publisher URL below to get your paper instantly. You can also search by keyword using the /kw command.
 
-Powered by Sci-Hub
+Use /help to see all input examples.
+
+📢 Join @x0projects for updates & new bots
   `,
 
   help: `
-This bot accepts several types of input, including DOI-URL, DOI-path, publisher, and searches files by keyword. Below is an example of the input that bots can accept
+<b>📖 How to use Sci-Hub Bot</b>
 
-[DOI-URL]
-https://doi.org/10.1177/193229681300700321
+<b>[DOI-URL]</b>
+<code>https://doi.org/10.1177/193229681300700321</code>
 
-[DOI-PATH]
-10.1177/193229681300700321
-DOI:10.1177/193229681300700321
-DOI 10.1177/193229681300700321
+<b>[DOI-PATH]</b>
+<code>10.1177/193229681300700321</code>
+<code>DOI:10.1177/193229681300700321</code>
 
-[PUBLISHER]
-https://www.nature.com/articles/laban.665
+<b>[PUBLISHER URL]</b>
+<code>https://www.nature.com/articles/laban.665</code>
 
-[KEYWORD]
-/kw computer science
+<b>[KEYWORD SEARCH]</b>
+<code>/kw computer science</code>
 
-<i>Note: add '/kw' before the keyword you want to search, this is mandatory if you want to search papers by keyword</i>
+<i>💡 Send a DOI or link and you'll see a paper info card with abstract, authors, and citations before downloading.</i>
+
+📢 <b>Join <a href="https://t.me/x0projects">@x0projects</a></b> for updates & new bots
   `,
 
   inputLink: `Please drop a DOI or Publisher URL below, or you can search by keyword by using "/kw" command before the keyword you want to search for. Use the /help command to find out more.`,
@@ -47,7 +50,7 @@ Thankyou!`,
 };
 
 exports.keyboardMessage = {
-  default: [['⚓️ Search Document'], ['💰 Donate', '🤠 Support']],
+  default: [['⚓️ Search Document'], ['📢 Channel', '💰 Donate', '🤠 Support']],
 };
 
 exports.adminChatId = [519613720, 1392922267];
