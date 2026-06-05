@@ -1,6 +1,7 @@
 const { searchKeyword, notifyAdmin, db, errorHandler, downloadQueue, cache } = require('../utils/index.js');
 const { adminChatId } = require('../utils/constans.js');
 const dataStore = require('../utils/dataStore.js');
+const mirrorDiscovery = require('../utils/mirrorDiscovery.js');
 
 // --- Admin check helper ---
 function isAdmin(chatId) {
@@ -262,5 +263,42 @@ exports.unban = async (ctx) => {
     }
   } catch (err) {
     console.error('[UNBAN] Error:', err.message);
+  }
+};
+
+/**
+ * /mirrors — show Sci-Hub mirror status (admin only)
+ */
+exports.mirrors = async (ctx) => {
+  try {
+    if (!isAdmin(ctx.message?.chat.id)) return;
+
+    const mirrorStatus = mirrorDiscovery.getMirrorStatus();
+    const working = mirrorStatus.filter(m => m.status === 'working');
+    const down = mirrorStatus.filter(m => m.status !== 'working');
+
+    const lines = ['🪞 <b>Sci-Hub Mirror Status</b>', ''];
+
+    if (working.length > 0) {
+      lines.push(`✅ <b>Working (${working.length}):</b>`);
+      for (const m of working) {
+        const ms = m.responseTime >= 99999 ? '?' : `${m.responseTime}ms`;
+        lines.push(`  • <code>${m.url}</code> — ${ms}`);
+      }
+      lines.push('');
+    }
+
+    if (down.length > 0) {
+      lines.push(`❌ <b>Down/Unhealthy (${down.length}):</b>`);
+      for (const m of down) {
+        const checked = m.lastChecked ? new Date(m.lastChecked).toLocaleString() : 'never';
+        lines.push(`  • <code>${m.url}</code> — ${m.status} (${checked})`);
+      }
+    }
+
+    const msg = lines.join('\n');
+    ctx.reply(msg, { parse_mode: 'HTML', disable_web_page_preview: true }).catch(() => {});
+  } catch (err) {
+    console.error('[MIRRORS] Error:', err.message);
   }
 };

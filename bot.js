@@ -5,7 +5,7 @@ const { Telegraf } = require('telegraf');
 
 const { adminChatId } = require('./utils/constans.js');
 const { support, search, donation } = require('./actions/menu.js');
-const { broadcast, keyword, status, stats, users, history, ban, unban } = require('./actions/command.js');
+const { broadcast, keyword, status, stats, users, history, ban, unban, mirrors } = require('./actions/command.js');
 const { handleDonateCallback, handleDonateCommand, handlePreCheckout, handleSuccessfulPayment } = require('./actions/donate.js');
 const callbackQueryAction = require('./actions/callbackQuery.js');
 const downloadCallbackAction = require('./actions/downloadCallback.js');
@@ -17,6 +17,7 @@ const mediaAction = require('./actions/media.js');
 const helpAction = require('./actions/help.js');
 
 const { errorHandler } = require('./utils/index.js');
+const mirrorDiscovery = require('./utils/mirrorDiscovery.js');
 
 // Create HTTP agent with keep-alive and IPv4 preference
 const agent = new https.Agent({
@@ -57,6 +58,7 @@ bot.command('users', async (ctx) => await users(ctx));
 bot.command('history', async (ctx) => await history(ctx));
 bot.command('ban', async (ctx) => await ban(ctx));
 bot.command('unban', async (ctx) => await unban(ctx));
+bot.command('mirrors', async (ctx) => await mirrors(ctx));
 
 bot.command('kw', async (ctx) => {
   ctx.reply('Search for articles based on keywords still under repair');
@@ -113,6 +115,7 @@ const adminCommands = [
   { command: 'ban', description: '🚫 Ban a user' },
   { command: 'unban', description: '✅ Unban a user' },
   { command: 'broadcast', description: '📢 Broadcast message' },
+  { command: 'mirrors', description: '🪞 Sci-Hub mirror status' },
 ];
 adminChatId.forEach((chatId) => {
   bot.telegram.callApi('setMyCommands', {
@@ -120,6 +123,9 @@ adminChatId.forEach((chatId) => {
     scope: { type: 'chat', chat_id: String(chatId) },
   }).catch(e => console.error(`setMyCommands admin ${chatId} error:`, e.message));
 });
+
+// Initialize mirror auto-discovery
+mirrorDiscovery.init();
 
 // Launch with long-polling
 bot.launch();

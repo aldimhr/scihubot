@@ -1,17 +1,21 @@
 const axios = require('axios');
 const errorHandler = require('./errorHandler.js');
 var HTMLParser = require('node-html-parser');
+const mirrorDiscovery = require('./mirrorDiscovery.js');
 
 const errMessage = "Unfortunately, Sci-Hub doesn't have the requested document :-(";
 
-const SCI_HUB_MIRRORS = [
-  'https://sci-hub.ru',
-  'https://sci-hub.st',
-  'https://sci-hub.se',
-];
-
 module.exports = async (doi) => {
-  for (const mirror of SCI_HUB_MIRRORS) {
+  // Get mirrors sorted by speed (auto-discovered)
+  const mirrors = mirrorDiscovery.getMirrors();
+
+  if (mirrors.length === 0) {
+    errorHandler({ err: new Error('No mirrors available'), name: 'helpers/sciHub.js' });
+    return { data: null, citation: null, error: 'No Sci-Hub mirrors available. Please try again later.' };
+  }
+
+  for (const mirror of mirrors) {
+    const startTime = Date.now();
     try {
       const searchUrl = `${mirror}/${doi}`;
 
@@ -23,6 +27,7 @@ module.exports = async (doi) => {
         },
       });
 
+      const elapsed = Date.now() - startTime;
       const document = HTMLParser.parse(response.data);
       const pageTitle = document.querySelector('title')?.text || '';
 
@@ -89,9 +94,11 @@ module.exports = async (doi) => {
         }
       }
 
+      mirrorDiscovery.reportSuccess(mirror, elapsed);
       return { data: pdfUrl, citation, error: false };
     } catch (err) {
-      // Mirror failed, try next
+      // Mirror failed, report and try next
+      mirrorDiscovery.reportFailure(mirror);
       continue;
     }
   }
