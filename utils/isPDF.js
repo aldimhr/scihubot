@@ -1,5 +1,5 @@
 exports.isPDF = (buf) => {
-  // console.log(buf.lastIndexOf("%PDF-")); // %PDF-1.7
-  // console.log(buf.lastIndexOf("%%EOF")); // %%EOF
-  return Buffer.isBuffer(buf) && buf.lastIndexOf('%PDF-') === 0 && buf.lastIndexOf('%%EOF') > -1;
+  // Check for PDF magic bytes at start — reliable indicator
+  // Don't require %%EOF — some valid PDFs (cross-ref streams) omit it
+  return Buffer.isBuffer(buf) && buf.length >= 1024 && buf.slice(0, 5).toString() === '%PDF-';
 };
