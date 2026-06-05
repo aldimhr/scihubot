@@ -1,5 +1,5 @@
-const { sciHub, downloadFile, citation } = require('../utils/index.js');
-const { keyboardMessage, responseMessages } = require('../utils/constans.js');
+const { sciHub, downloadFile, citation, downloadQueue, cache } = require('../utils/index.js');
+const { responseMessages } = require('../utils/constans.js');
 
 module.exports = async (ctx) => {
   const message = ctx.message;
@@ -8,60 +8,88 @@ module.exports = async (ctx) => {
 
   let doi;
   if (text.toLowerCase().includes('doi:')) {
-    // pattern : DOI: doi.number/number
-    doi = `http://doi.org/${text.toLowerCase().split('doi:').join('').trim()}`;
+    doi = text.toLowerCase().split('doi:').join('').trim();
   } else if (text.split(' ').length === 2 && text.split(' ')[0].toLowerCase().includes('doi')) {
-    // pattern : DOI doi.number/number
-    doi = `http://doi.org/${text.toLowerCase().split('doi').join('').trim()}`;
+    doi = text.toLowerCase().split('doi').join('').trim();
   } else if (text.includes('/') && text.includes('.') && text.split(' ').length === 1) {
-    // pattern : doi.number/number
     if (text[0] === '/') text = text.substring(1);
-    doi = `http://doi.org/${text}`;
+    doi = text;
   }
 
-  if (!doi || doi.length <= 20 || doi.split(' ').length !== 1) return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
+  if (!doi || doi.length <= 20 || doi.split(' ').length !== 1) {
+    return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
+  }
+
+  // Normalize DOI for cache key
+  const normalizedDOI = doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '').replace(/\/+$/, '');
+  const doiURL = `http://doi.org/${normalizedDOI}`;
 
   // wait message
-  let { message_id } = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
-    reply_to_message_id: message.message_id,
-  });
-
-  // getting file
-  const { data: scihubData, citation: scihubCitation, error: scihubError } = await sciHub(doi);
-
-  // send error message
-  if (scihubError) {
-    ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+  let waitMsg;
+  try {
+    waitMsg = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
       reply_to_message_id: message.message_id,
     });
-    return await ctx.telegram.deleteMessage(chat_id, message_id);
+  } catch (e) {
+    console.error('[TEXT] Failed to send wait message:', e.message);
   }
 
-  // download file
-  const dFile = await downloadFile(scihubData);
-  if (dFile.error) {
-    ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-      reply_to_message_id: message.message_id,
-    });
-    return await ctx.telegram.deleteMessage(chat_id, message_id);
-  }
+  // Run download through queue
+  const result = await downloadQueue.enqueue(
+    async () => {
+      // Check cache first
+      const cached = cache.get(normalizedDOI);
+      if (cached) {
+        console.log(`[TEXT] Cache hit for DOI: ${normalizedDOI}`);
+        return { data: cached, citation: null, error: false, cached: true };
+      }
 
-  // delete wait message
-  await ctx.telegram.deleteMessage(chat_id, message_id);
+      // Hit Sci-Hub
+      const { data: scihubData, citation: scihubCitation, error: scihubError } = await sciHub(doiURL);
+      if (scihubError) return { data: null, citation: null, error: scihubError };
 
-  // send file to user
-  ctx.replyWithDocument(
-    {
-      source: dFile.data,
-      filename: `${doi}.pdf`,
+      // Download PDF
+      const dFile = await downloadFile(scihubData);
+      if (dFile.error) return { data: null, citation: null, error: dFile.error };
+
+      // Cache it
+      cache.set(normalizedDOI, dFile.data);
+
+      return { data: dFile.data, citation: scihubCitation, error: false };
     },
-    {
-      caption: scihubCitation || '',
-      reply_to_message_id: message.message_id,
-      reply_markup: {
-        resize_keyboard: true,
-        keyboard: keyboardMessage.default,
-      },
+    (position, total) => {
+      console.log(`[TEXT] Queued: position ${position}/${total}`);
+      if (waitMsg) {
+        ctx.telegram.editMessageText(chat_id, waitMsg.message_id, undefined,
+          `⏳ All download slots busy. You're #${position} in queue...`
+        ).catch(() => {});
+      }
     }
   );
+
+  // delete wait message
+  if (waitMsg) {
+    try {
+      await ctx.telegram.deleteMessage(chat_id, waitMsg.message_id);
+    } catch (e) {
+      console.error('[TEXT] Failed to delete wait msg:', e.message);
+    }
+  }
+
+  if (result.error || !result.data) {
+    console.log('[TEXT] Error:', result.error);
+    return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
+      reply_to_message_id: message.message_id,
+    });
+  }
+
+  console.log('[TEXT] Sending PDF document...');
+  ctx.replyWithDocument(
+    { source: result.data, filename: `${normalizedDOI.replace(/\//g, '_')}.pdf` },
+    {
+      caption: result.citation || (result.cached ? '(cached)' : ''),
+      reply_to_message_id: message.message_id,
+    }
+  ).then(() => console.log('[TEXT] PDF sent successfully'))
+   .catch(e => console.error('[TEXT] Failed to send PDF:', e.message));
 };

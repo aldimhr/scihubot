@@ -1,4 +1,5 @@
-const { searchKeyword, notifyAdmin, db, errorHandler } = require('../utils/index.js');
+const { searchKeyword, notifyAdmin, db, errorHandler, downloadQueue, cache } = require('../utils/index.js');
+const { adminChatId } = require('../utils/constans.js');
 
 exports.broadcast = async (ctx) => {
   try {
@@ -78,5 +79,32 @@ exports.keyword = async (ctx) => {
     });
   } catch (err) {
     errorHandler({ ctx, message: 'bot/action/command()' });
+  }
+};
+
+/**
+ * /status — show queue and cache stats (admin only)
+ */
+exports.status = async (ctx) => {
+  try {
+    const chat_id = ctx.message?.chat.id;
+
+    // Check if admin
+    const isAdmin = adminChatId.includes(chat_id);
+    if (!isAdmin) return;
+
+    const queueStatus = downloadQueue.getStatus();
+    const cacheStats = cache.stats();
+
+    const msg = [
+      '📊 <b>Bot Status</b>',
+      '',
+      `🔄 <b>Queue:</b> ${queueStatus.active}/${queueStatus.max} active, ${queueStatus.waiting} waiting`,
+      `💾 <b>Cache:</b> ${cacheStats.files} files, ${cacheStats.sizeMB}MB / ${cacheStats.maxSizeMB}MB`,
+    ].join('\n');
+
+    ctx.reply(msg, { parse_mode: 'HTML' }).catch(() => {});
+  } catch (err) {
+    console.error('[STATUS] Error:', err.message);
   }
 };
