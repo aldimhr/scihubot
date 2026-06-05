@@ -2,6 +2,8 @@ const { sciHub, getMetaDOI, downloadFile, citation, errorHandler, downloadQueue,
 const { isPDF } = require('../utils/isPDF.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
+const { getFileSize, sizeStatus, formatSize, TELEGRAM_MAX_FILE } = require('../utils/pdfSize.js');
+const { splitPDF } = require('../utils/pdfSplitter.js');
 const { buildCaption } = require('../utils/caption.js');
 const ProgressMessage = require('../utils/progress.js');
 const axios = require('axios');
@@ -31,7 +33,6 @@ const downloadPipeline = async ({ url, progress }) => {
     const { data, citation: cit, error } = await sciHub(url);
     if (error) return { data: null, citation: null, error };
 
-    const sizeHint = data ? '' : '';
     await progress('📄 Found! Downloading PDF...');
     const { data: fileData, error: dlError } = await downloadFile(data);
     if (dlError) return { data: null, citation: null, error: dlError };
@@ -89,6 +90,46 @@ const checkResponseData = async (url) => {
   }
 };
 
+/**
+ * Send PDF to user, splitting if it exceeds Telegram's limit.
+ */
+const sendPDF = async (ctx, messageId, fileData, filename, caption) => {
+  if (fileData.length <= TELEGRAM_MAX_FILE) {
+    return ctx.replyWithDocument(
+      { source: fileData, filename },
+      { caption, reply_to_message_id: messageId }
+    );
+  }
+
+  // File too large — try splitting
+  console.log(`[LINK] File too large (${formatSize(fileData.length)}), attempting split...`);
+  const baseName = filename.replace('.pdf', '');
+  const { parts, error } = await splitPDF(fileData, baseName);
+
+  if (error || parts.length === 0) {
+    return ctx.reply(
+      `⚠️ PDF is ${formatSize(fileData.length)} — too large for Telegram (max 50 MB) and couldn't split it.\n\nTry downloading directly from the DOI link.`,
+      { reply_to_message_id: messageId }
+    );
+  }
+
+  // Send each part
+  await ctx.reply(
+    `📦 PDF split into ${parts.length} parts (${formatSize(fileData.length)} total)`,
+    { reply_to_message_id: messageId }
+  );
+
+  for (const part of parts) {
+    await ctx.replyWithDocument(
+      { source: part.data, filename: part.filename },
+      {
+        caption: `📄 Part ${part.index}/${parts.length} (pages ${part.pages})`,
+        reply_to_message_id: messageId,
+      }
+    ).catch(e => console.error(`[LINK] Failed to send part ${part.index}:`, e.message));
+  }
+};
+
 module.exports = async (ctx) => {
   try {
     const text = checkInputText(ctx.message?.text);
@@ -121,10 +162,23 @@ module.exports = async (ctx) => {
 
     // If we have a DOI, show info card with download button
     if (doi) {
-      const { meta, error } = await fetchMeta(doi);
+      const { meta } = await fetchMeta(doi);
       if (meta) {
-        const card = formatCard(meta);
-        const keyboard = buildKeyboard(doi);
+        // Pre-check file size via Sci-Hub
+        let sizeInfo = null;
+        try {
+          const { data: scihubUrl } = await sciHub(`https://doi.org/${doi}`);
+          if (scihubUrl) {
+            const { size } = await getFileSize(scihubUrl);
+            sizeInfo = sizeStatus(size);
+          }
+        } catch (e) {
+          // Non-fatal — show card without size
+          console.log('[LINK] Size pre-check failed:', e.message);
+        }
+
+        const card = formatCard(meta, sizeInfo);
+        const keyboard = buildKeyboard(doi, sizeInfo?.tooLarge || false);
         return ctx.reply(card, {
           parse_mode: 'Markdown',
           reply_markup: keyboard,
@@ -161,14 +215,9 @@ module.exports = async (ctx) => {
 
     recordDownload({ userId: ctx.message?.from?.id, doi: text, success: true, cached: result.cached });
 
-    ctx.replyWithDocument(
-      { source: result.data, filename },
-      {
-        caption: buildCaption(result.citation, { cached: result.cached }),
-        reply_to_message_id: messageId,
-      }
-    ).then(() => console.log('[LINK] PDF sent successfully'))
-     .catch(e => console.error('[LINK] Failed to send PDF:', e.message));
+    const caption = buildCaption(result.citation, { cached: result.cached });
+    await sendPDF(ctx, messageId, result.data, filename, caption);
+    console.log('[LINK] PDF sent successfully');
   } catch (err) {
     console.error('[LINK] Unhandled error:', err.message);
     errorHandler({ err, name: 'bot.entity()' });

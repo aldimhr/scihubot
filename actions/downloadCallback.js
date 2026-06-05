@@ -1,7 +1,49 @@
 const { sciHub, downloadFile, downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { buildCaption } = require('../utils/caption.js');
+const { formatSize, TELEGRAM_MAX_FILE } = require('../utils/pdfSize.js');
+const { splitPDF } = require('../utils/pdfSplitter.js');
 const ProgressMessage = require('../utils/progress.js');
+
+/**
+ * Send PDF to user, splitting if it exceeds Telegram's limit.
+ */
+const sendPDF = async (ctx, messageId, fileData, filename, caption) => {
+  if (fileData.length <= TELEGRAM_MAX_FILE) {
+    return ctx.replyWithDocument(
+      { source: fileData, filename },
+      { caption, reply_to_message_id: messageId }
+    ).catch(e => console.error('[DL-CB] Failed to send PDF:', e.message));
+  }
+
+  // File too large — try splitting
+  console.log(`[DL-CB] File too large (${formatSize(fileData.length)}), attempting split...`);
+  const baseName = filename.replace('.pdf', '');
+  const { parts, error } = await splitPDF(fileData, baseName);
+
+  if (error || parts.length === 0) {
+    return ctx.reply(
+      `⚠️ PDF is ${formatSize(fileData.length)} — too large for Telegram (max 50 MB) and couldn't split it.\n\nTry downloading directly from the DOI link.`,
+      { reply_to_message_id: messageId }
+    ).catch(() => {});
+  }
+
+  // Send each part
+  await ctx.reply(
+    `📦 PDF split into ${parts.length} parts (${formatSize(fileData.length)} total)`,
+    { reply_to_message_id: messageId }
+  ).catch(() => {});
+
+  for (const part of parts) {
+    await ctx.replyWithDocument(
+      { source: part.data, filename: part.filename },
+      {
+        caption: `📄 Part ${part.index}/${parts.length} (pages ${part.pages})`,
+        reply_to_message_id: messageId,
+      }
+    ).catch(e => console.error(`[DL-CB] Failed to send part ${part.index}:`, e.message));
+  }
+};
 
 /**
  * Handle "Download PDF" button press from the info card.
@@ -38,10 +80,7 @@ module.exports = async (ctx) => {
     const filename = doi.replace(/\//g, '_') + '.pdf';
     recordDownload({ userId, doi, success: true, cached: true });
 
-    await ctx.replyWithDocument(
-      { source: cached, filename },
-      { caption: buildCaption(`📄 ${doi}`), reply_to_message_id: messageId }
-    ).catch(e => console.error('[DL-CB] Failed to send cached PDF:', e.message));
+    await sendPDF(ctx, messageId, cached, filename, buildCaption(`📄 ${doi}`));
 
     // Restore info card
     await restoreInfoCard(ctx, chatId, messageId, doi);
@@ -60,7 +99,7 @@ module.exports = async (ctx) => {
       const { data: fileData, error: dlError } = await downloadFile(scihubData);
       if (dlError) return { data: null, citation: null, error: dlError };
 
-      await editProgress(`✅ Downloaded ${(fileData.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
+      await editProgress(`✅ Downloaded ${formatSize(fileData.length)}. Sending...`);
       cache.set(doi, fileData);
       return { data: fileData, citation: cit, error: false };
     },
@@ -76,17 +115,11 @@ module.exports = async (ctx) => {
     return;
   }
 
-  // Send PDF
+  // Send PDF (with split handling for large files)
   const filename = doi.replace(/\//g, '_') + '.pdf';
   recordDownload({ userId, doi, success: true, cached: false });
 
-  await ctx.replyWithDocument(
-    { source: result.data, filename },
-    {
-      caption: buildCaption(result.citation || `📄 ${doi}`),
-      reply_to_message_id: messageId,
-    }
-  ).catch(e => console.error('[DL-CB] Failed to send PDF:', e.message));
+  await sendPDF(ctx, messageId, result.data, filename, buildCaption(result.citation || `📄 ${doi}`));
 
   // Restore info card
   await restoreInfoCard(ctx, chatId, messageId, doi);

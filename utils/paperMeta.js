@@ -56,8 +56,10 @@ async function fetchMeta(doi) {
 
 /**
  * Format metadata into a clean Telegram info card.
+ * @param {Object} meta - Paper metadata from fetchMeta
+ * @param {Object|null} sizeInfo - { label, tooLarge } from sizeStatus(), or null to skip
  */
-function formatCard(meta) {
+function formatCard(meta, sizeInfo = null) {
   const lines = [];
 
   // Title
@@ -93,6 +95,11 @@ function formatCard(meta) {
     lines.push(`📊 Cited *${meta.citations}* times`);
   }
 
+  // File size (if available)
+  if (sizeInfo) {
+    lines.push(sizeInfo.label);
+  }
+
   // DOI
   lines.push('');
   lines.push(`🏷️ \`${meta.doi}\``);
@@ -117,12 +124,18 @@ function formatCard(meta) {
 
 /**
  * Build inline keyboard for the info card.
+ * @param {string} doi - Paper DOI
+ * @param {boolean} tooLarge - If true, download button is disabled with warning
  */
-function buildKeyboard(doi) {
+function buildKeyboard(doi, tooLarge = false) {
+  const downloadBtn = tooLarge
+    ? { text: '⚠️ Too large for Telegram', callback_data: `dl:${doi}` }
+    : { text: '⬇️ Download PDF', callback_data: `dl:${doi}` };
+
   return {
     inline_keyboard: [
       [
-        { text: '⬇️ Download PDF', callback_data: `dl:${doi}` },
+        downloadBtn,
         { text: '📎 Open DOI', url: `https://doi.org/${doi}` },
       ],
       [
