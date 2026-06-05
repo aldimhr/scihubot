@@ -1,6 +1,7 @@
 const { sciHub, getMetaDOI, downloadFile, citation, errorHandler, downloadQueue, cache } = require('../utils/index.js');
 const { responseMessages } = require('../utils/constans.js');
 const { isPDF } = require('../utils/isPDF.js');
+const { recordDownload } = require('../utils/dataStore.js');
 const axios = require('axios');
 
 const checkInputText = (text) => {
@@ -137,6 +138,7 @@ module.exports = async (ctx) => {
 
     if (result.error || !result.data) {
       console.log('[LINK] Error or no file:', result.error);
+      recordDownload({ userId: ctx.message?.from?.id, doi: text, success: false, error: result.error });
       return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
         reply_to_message_id: messageId,
       });
@@ -144,6 +146,8 @@ module.exports = async (ctx) => {
 
     console.log('[LINK] Sending PDF document...');
     const filename = text.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
+
+    recordDownload({ userId: ctx.message?.from?.id, doi: text, success: true, cached: result.cached });
 
     ctx.replyWithDocument(
       { source: result.data, filename },

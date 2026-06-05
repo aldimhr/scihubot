@@ -1,5 +1,6 @@
 const { sciHub, downloadFile, citation, downloadQueue, cache } = require('../utils/index.js');
 const { responseMessages } = require('../utils/constans.js');
+const { recordDownload } = require('../utils/dataStore.js');
 
 module.exports = async (ctx) => {
   const message = ctx.message;
@@ -78,12 +79,14 @@ module.exports = async (ctx) => {
 
   if (result.error || !result.data) {
     console.log('[TEXT] Error:', result.error);
+    recordDownload({ userId: message.from?.id, doi: normalizedDOI, success: false, error: result.error });
     return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
       reply_to_message_id: message.message_id,
     });
   }
 
   console.log('[TEXT] Sending PDF document...');
+  recordDownload({ userId: message.from?.id, doi: normalizedDOI, success: true, cached: result.cached });
   ctx.replyWithDocument(
     { source: result.data, filename: `${normalizedDOI.replace(/\//g, '_')}.pdf` },
     {

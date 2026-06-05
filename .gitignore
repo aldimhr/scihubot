@@ -11,3 +11,4 @@ note.txt
 node_modules/
 dist/
 cache/
+data/

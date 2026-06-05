@@ -4,7 +4,7 @@ const http = require('http');
 const { Telegraf } = require('telegraf');
 
 const { support, search, donation } = require('./actions/menu.js');
-const { broadcast, keyword, status } = require('./actions/command.js');
+const { broadcast, keyword, status, stats, users, history, ban, unban } = require('./actions/command.js');
 const callbackQueryAction = require('./actions/callbackQuery.js');
 const textMessageAction = require('./actions/textMessage.js');
 const middlewareAction = require('./actions/middleware.js');
@@ -44,6 +44,11 @@ bot.hears('🤠 Support', (ctx) => supportAction(ctx));
 
 bot.command('broadcast', async (ctx) => await broadcastAction(ctx));
 bot.command('status', async (ctx) => await status(ctx));
+bot.command('stats', async (ctx) => await stats(ctx));
+bot.command('users', async (ctx) => await users(ctx));
+bot.command('history', async (ctx) => await history(ctx));
+bot.command('ban', async (ctx) => await ban(ctx));
+bot.command('unban', async (ctx) => await unban(ctx));
 
 bot.command('kw', async (ctx) => {
   ctx.reply('Search for articles based on keywords still under repair');
