@@ -1,7 +1,7 @@
 const { sciHub, getMetaDOI, downloadFile, citation, errorHandler, downloadQueue, cache } = require('../utils/index.js');
-const { responseMessages } = require('../utils/constans.js');
 const { isPDF } = require('../utils/isPDF.js');
 const { recordDownload } = require('../utils/dataStore.js');
+const ProgressMessage = require('../utils/progress.js');
 const axios = require('axios');
 
 const checkInputText = (text) => {
@@ -15,58 +15,62 @@ const checkInputText = (text) => {
 
 /**
  * Full download pipeline: extract DOI → check cache → Sci-Hub → download → cache.
- * Runs inside the download queue.
+ * @param {Function} progress - async (text) => void, updates the progress message
  */
-const downloadPipeline = async ({ url }) => {
+const downloadPipeline = async ({ url, progress }) => {
   let doi = null;
-  let pdfUrl = null;
 
   if (url.includes('doi.org')) {
-    // Direct DOI link — extract DOI for caching
+    // Direct DOI link
     const doiMatch = url.match(/doi\.org\/(.+)/);
     if (doiMatch) doi = doiMatch[1].replace(/\/+$/, '');
 
+    await progress('🔍 Searching Sci-Hub for your paper...');
     const { data, citation: cit, error } = await sciHub(url);
     if (error) return { data: null, citation: null, error };
 
-    pdfUrl = data;
-    // Verify download
-    const { data: fileData, error: dlError } = await downloadFile(pdfUrl);
+    const sizeHint = data ? '' : '';
+    await progress('📄 Found! Downloading PDF...');
+    const { data: fileData, error: dlError } = await downloadFile(data);
     if (dlError) return { data: null, citation: null, error: dlError };
 
-    // Cache by DOI
-    if (doi) cache.set(doi, fileData);
+    await progress(`✅ Downloaded ${(fileData.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
 
+    if (doi) cache.set(doi, fileData);
     return { data: fileData, citation: cit, error: false };
+
   } else {
     // Publisher URL — extract DOI first
+    await progress('🔍 Extracting DOI from publisher page...');
     const { data: metaDOI, error: metaError } = await getMetaDOI(url);
     if (metaError) {
-      // Fallback: try direct download
+      await progress('🔍 Trying direct download...');
       const { data: responseData, error: responseError } = await checkResponseData(url);
       return { data: responseData, citation: null, error: responseError };
     }
 
     doi = metaDOI ? metaDOI.replace(/https?:\/\/doi\.org\//, '').replace(/\/+$/, '') : null;
 
-    // Check cache by DOI
+    // Check cache
     if (doi) {
       const cached = cache.get(doi);
       if (cached) {
-        console.log(`[LINK] Cache hit for DOI: ${doi}`);
+        await progress('💾 Found in cache! Sending instantly...');
         return { data: cached, citation: null, error: false, cached: true };
       }
     }
 
+    await progress('🔍 Searching Sci-Hub for your paper...');
     const { data, citation: cit, error } = await sciHub(metaDOI);
     if (error) return { data: null, citation: null, error };
 
+    await progress('📄 Found! Downloading PDF...');
     const { data: fileData, error: dlError } = await downloadFile(data);
     if (dlError) return { data: null, citation: null, error: dlError };
 
-    // Cache by DOI
-    if (doi) cache.set(doi, fileData);
+    await progress(`✅ Downloaded ${(fileData.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
 
+    if (doi) cache.set(doi, fileData);
     return { data: fileData, citation: cit, error: false };
   }
 };
@@ -74,12 +78,8 @@ const downloadPipeline = async ({ url }) => {
 const checkResponseData = async (url) => {
   try {
     const { data: responseData } = await axios({
-      method: 'get',
-      url,
-      responseType: 'arraybuffer',
-      timeout: 30000,
+      method: 'get', url, responseType: 'arraybuffer', timeout: 30000,
     });
-
     if (isPDF(responseData)) return { data: responseData, error: false };
     return { data: null, error: 'response data is not PDF file' };
   } catch (error) {
@@ -96,45 +96,27 @@ module.exports = async (ctx) => {
 
     console.log(`[LINK] Received: ${text}`);
 
-    // check if many links in one message
     if (entities.length > 1) {
       return ctx.reply('Please enter the links one by one', {
         reply_to_message_id: messageId,
       });
     }
 
-    // send wait message
-    let waitMsg;
-    try {
-      waitMsg = await ctx.telegram.sendMessage(chatId, responseMessages.wait, {
-        reply_to_message_id: messageId,
-      });
-    } catch (e) {
-      console.error('[LINK] Failed to send wait message:', e.message);
-    }
+    // Create progress message
+    const progress = new ProgressMessage(ctx, chatId, messageId);
+    await progress.update('🕵️ Starting download...');
 
     // Run download through queue
     const result = await downloadQueue.enqueue(
-      () => downloadPipeline({ url: text }),
-      (position, total) => {
-        // User got queued — notify them
+      () => downloadPipeline({ url: text, progress: (text) => progress.update(text) }),
+      async (position, total) => {
         console.log(`[LINK] Queued: position ${position}/${total}`);
-        if (waitMsg) {
-          ctx.telegram.editMessageText(chatId, waitMsg.message_id, undefined,
-            `⏳ All download slots busy. You're #${position} in queue...`
-          ).catch(() => {});
-        }
+        await progress.update(`⏳ All download slots busy. You're #${position} in queue...`);
       }
     );
 
-    // delete wait message
-    if (waitMsg) {
-      try {
-        await ctx.telegram.deleteMessage(chatId, waitMsg.message_id);
-      } catch (e) {
-        console.error('[LINK] Failed to delete wait msg:', e.message);
-      }
-    }
+    // Delete progress message
+    await progress.done();
 
     if (result.error || !result.data) {
       console.log('[LINK] Error or no file:', result.error);
@@ -152,7 +134,7 @@ module.exports = async (ctx) => {
     ctx.replyWithDocument(
       { source: result.data, filename },
       {
-        caption: result.citation || (result.cached ? '(cached)' : ''),
+        caption: result.citation || (result.cached ? '💾 From cache' : ''),
         reply_to_message_id: messageId,
       }
     ).then(() => console.log('[LINK] PDF sent successfully'))

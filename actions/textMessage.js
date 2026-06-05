@@ -1,6 +1,6 @@
 const { sciHub, downloadFile, citation, downloadQueue, cache } = require('../utils/index.js');
-const { responseMessages } = require('../utils/constans.js');
 const { recordDownload } = require('../utils/dataStore.js');
+const ProgressMessage = require('../utils/progress.js');
 
 module.exports = async (ctx) => {
   const message = ctx.message;
@@ -18,22 +18,19 @@ module.exports = async (ctx) => {
   }
 
   if (!doi || doi.length <= 20 || doi.split(' ').length !== 1) {
-    return ctx.reply(responseMessages.inputLink, { disable_web_page_preview: true });
+    return ctx.reply(
+      'Please drop a DOI or Publisher URL below. Use /help for examples.',
+      { disable_web_page_preview: true }
+    );
   }
 
-  // Normalize DOI for cache key
+  // Normalize DOI
   const normalizedDOI = doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '').replace(/\/+$/, '');
   const doiURL = `http://doi.org/${normalizedDOI}`;
 
-  // wait message
-  let waitMsg;
-  try {
-    waitMsg = await ctx.telegram.sendMessage(chat_id, responseMessages.wait, {
-      reply_to_message_id: message.message_id,
-    });
-  } catch (e) {
-    console.error('[TEXT] Failed to send wait message:', e.message);
-  }
+  // Create progress message
+  const progress = new ProgressMessage(ctx, chat_id, message.message_id);
+  await progress.update('🕵️ Starting download...');
 
   // Run download through queue
   const result = await downloadQueue.enqueue(
@@ -41,41 +38,33 @@ module.exports = async (ctx) => {
       // Check cache first
       const cached = cache.get(normalizedDOI);
       if (cached) {
-        console.log(`[TEXT] Cache hit for DOI: ${normalizedDOI}`);
+        await progress.update('💾 Found in cache! Sending instantly...');
         return { data: cached, citation: null, error: false, cached: true };
       }
 
-      // Hit Sci-Hub
+      await progress.update('🔍 Searching Sci-Hub for your paper...');
       const { data: scihubData, citation: scihubCitation, error: scihubError } = await sciHub(doiURL);
       if (scihubError) return { data: null, citation: null, error: scihubError };
 
-      // Download PDF
+      await progress.update('📄 Found! Downloading PDF...');
       const dFile = await downloadFile(scihubData);
       if (dFile.error) return { data: null, citation: null, error: dFile.error };
+
+      await progress.update(`✅ Downloaded ${(dFile.data.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
 
       // Cache it
       cache.set(normalizedDOI, dFile.data);
 
       return { data: dFile.data, citation: scihubCitation, error: false };
     },
-    (position, total) => {
+    async (position, total) => {
       console.log(`[TEXT] Queued: position ${position}/${total}`);
-      if (waitMsg) {
-        ctx.telegram.editMessageText(chat_id, waitMsg.message_id, undefined,
-          `⏳ All download slots busy. You're #${position} in queue...`
-        ).catch(() => {});
-      }
+      await progress.update(`⏳ All download slots busy. You're #${position} in queue...`);
     }
   );
 
-  // delete wait message
-  if (waitMsg) {
-    try {
-      await ctx.telegram.deleteMessage(chat_id, waitMsg.message_id);
-    } catch (e) {
-      console.error('[TEXT] Failed to delete wait msg:', e.message);
-    }
-  }
+  // Delete progress message
+  await progress.done();
 
   if (result.error || !result.data) {
     console.log('[TEXT] Error:', result.error);
@@ -87,10 +76,11 @@ module.exports = async (ctx) => {
 
   console.log('[TEXT] Sending PDF document...');
   recordDownload({ userId: message.from?.id, doi: normalizedDOI, success: true, cached: result.cached });
+
   ctx.replyWithDocument(
     { source: result.data, filename: `${normalizedDOI.replace(/\//g, '_')}.pdf` },
     {
-      caption: result.citation || (result.cached ? '(cached)' : ''),
+      caption: result.citation || (result.cached ? '💾 From cache' : ''),
       reply_to_message_id: message.message_id,
     }
   ).then(() => console.log('[TEXT] PDF sent successfully'))
