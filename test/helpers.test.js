@@ -13,6 +13,7 @@ const { isPDF } = require('../utils/isPDF.js');
 const { formatSize, sizeStatus, TELEGRAM_MAX_FILE } = require('../utils/pdfSize.js');
 const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
 const { searchPapers, RESULTS_PER_PAGE } = require('../utils/keyword.js');
+const { parseMultipleDois, parseDoisFromEntities } = require('../utils/parseDoi.js');
 
 // ====================================================================
 // 1. DOI PARSING — regexes used in linkEntity.js and textMessage.js
@@ -454,5 +455,113 @@ describe('sizeStatus()', () => {
     const result = sizeStatus(null);
     expect(result.tooLarge).toBe(false);
     expect(result.label).toContain('unknown');
+  });
+});
+
+// ====================================================================
+// 7. BATCH DOI PARSING — parseMultipleDois()
+// ====================================================================
+
+describe('Batch parsing — parseMultipleDois()', () => {
+  test('parses comma-separated DOIs', () => {
+    const dois = parseMultipleDois('10.1177/193229681300700321, 10.3389/fsurg.2020.593367');
+    expect(dois).toEqual(['10.1177/193229681300700321', '10.3389/fsurg.2020.593367']);
+  });
+
+  test('parses newline-separated DOIs', () => {
+    const dois = parseMultipleDois('10.1177/193229681300700321\n10.3389/fsurg.2020.593367');
+    expect(dois).toEqual(['10.1177/193229681300700321', '10.3389/fsurg.2020.593367']);
+  });
+
+  test('parses DOIs with DOI: prefix', () => {
+    const dois = parseMultipleDois('DOI:10.1177/193229681300700321, DOI:10.3389/fsurg.2020.593367');
+    expect(dois).toEqual(['10.1177/193229681300700321', '10.3389/fsurg.2020.593367']);
+  });
+
+  test('parses multiple doi.org URLs', () => {
+    const dois = parseMultipleDois(
+      'https://doi.org/10.1177/193229681300700321\nhttps://doi.org/10.3389/fsurg.2020.593367'
+    );
+    expect(dois.length).toBe(2);
+    expect(dois[0]).toBe('10.1177/193229681300700321');
+    expect(dois[1]).toBe('10.3389/fsurg.2020.593367');
+  });
+
+  test('parses mixed URLs and bare DOIs', () => {
+    const dois = parseMultipleDois(
+      'https://doi.org/10.1038/nature12373, 10.3389/fsurg.2020.593367'
+    );
+    expect(dois.length).toBe(2);
+  });
+
+  test('deduplicates identical DOIs', () => {
+    const dois = parseMultipleDois(
+      '10.1177/193229681300700321, 10.1177/193229681300700321'
+    );
+    expect(dois.length).toBe(1);
+  });
+
+  test('returns single DOI in array', () => {
+    const dois = parseMultipleDois('10.1177/193229681300700321');
+    expect(dois).toEqual(['10.1177/193229681300700321']);
+  });
+
+  test('returns empty array for no DOIs', () => {
+    expect(parseMultipleDois('hello world')).toEqual([]);
+    expect(parseMultipleDois('')).toEqual([]);
+    expect(parseMultipleDois(null)).toEqual([]);
+  });
+
+  test('strips trailing punctuation', () => {
+    const dois = parseMultipleDois('10.1177/193229681300700321.')
+    expect(dois[0]).toBe('10.1177/193229681300700321');
+  });
+
+  test('handles 3+ DOIs', () => {
+    const dois = parseMultipleDois(
+      '10.1177/193229681300700321, 10.3389/fsurg.2020.593367, 10.1038/nature12373'
+    );
+    expect(dois.length).toBe(3);
+  });
+
+  test('handles semicolon separator', () => {
+    const dois = parseMultipleDois(
+      '10.1177/193229681300700321; 10.3389/fsurg.2020.593367'
+    );
+    expect(dois.length).toBe(2);
+  });
+});
+
+describe('Batch parsing — parseDoisFromEntities()', () => {
+  test('extracts DOIs from url entities', () => {
+    const text = 'https://doi.org/10.1177/193229681300700321 https://doi.org/10.3389/fsurg.2020.593367';
+    const entities = [
+      { type: 'url', offset: 0, length: 48 },
+      { type: 'url', offset: 49, length: 45 },
+    ];
+    const dois = parseDoisFromEntities(entities, text);
+    expect(dois.length).toBe(2);
+  });
+
+  test('extracts DOI from text_link entity', () => {
+    const entities = [
+      { type: 'text_link', offset: 0, length: 10, url: 'https://doi.org/10.1038/nature12373' },
+    ];
+    const dois = parseDoisFromEntities(entities, 'click here');
+    expect(dois).toEqual(['10.1038/nature12373']);
+  });
+
+  test('returns empty for non-doi.org URLs', () => {
+    const text = 'https://nature.com/articles/1 https://springer.com/article/2';
+    const entities = [
+      { type: 'url', offset: 0, length: 30 },
+      { type: 'url', offset: 31, length: 33 },
+    ];
+    const dois = parseDoisFromEntities(entities, text);
+    expect(dois).toEqual([]);
+  });
+
+  test('returns empty for null input', () => {
+    expect(parseDoisFromEntities(null, null)).toEqual([]);
   });
 });

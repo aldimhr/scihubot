@@ -4,12 +4,25 @@ const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js'
 const { getFileSize, sizeStatus, formatSize } = require('../utils/pdfSize.js');
 const { sendPDF } = require('../utils/sendPDF.js');
 const { buildCaption } = require('../utils/caption.js');
+const { parseMultipleDois } = require('../utils/parseDoi.js');
+const batchDownload = require('./batchDownload.js');
 const ProgressMessage = require('../utils/progress.js');
 
 module.exports = async (ctx) => {
   const message = ctx.message;
   const chat_id = message.chat.id;
   let text = message.text;
+
+  // Check for multiple DOIs (batch mode)
+  // Only if text has separators suggesting multiple DOIs
+  const hasSeparators = text.includes(',') || text.includes('\n');
+  if (hasSeparators) {
+    const dois = parseMultipleDois(text);
+    if (dois.length > 1) {
+      console.log(`[TEXT] Batch mode: ${dois.length} DOIs`);
+      return batchDownload(ctx, dois, chat_id, message.message_id);
+    }
+  }
 
   let doi;
   if (text.toLowerCase().includes('doi:')) {

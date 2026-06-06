@@ -5,6 +5,8 @@ const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js'
 const { getFileSize, sizeStatus } = require('../utils/pdfSize.js');
 const { sendPDF } = require('../utils/sendPDF.js');
 const { buildCaption } = require('../utils/caption.js');
+const { parseDoisFromEntities } = require('../utils/parseDoi.js');
+const batchDownload = require('./batchDownload.js');
 const ProgressMessage = require('../utils/progress.js');
 const axios = require('axios');
 
@@ -99,10 +101,20 @@ module.exports = async (ctx) => {
 
     console.log(`[LINK] Received: ${text}`);
 
+    // Multiple links? Try batch DOI download
     if (entities.length > 1) {
-      return ctx.reply('Please enter the links one by one', {
-        reply_to_message_id: messageId,
-      });
+      const dois = parseDoisFromEntities(entities, text);
+      if (dois.length > 1) {
+        console.log(`[LINK] Batch mode: ${dois.length} DOIs`);
+        return batchDownload(ctx, dois, chatId, messageId);
+      }
+      // Not all doi.org — can't batch publisher URLs yet
+      if (dois.length === 0) {
+        return ctx.reply('Multiple links detected. Please send DOI links (doi.org) one by one, or use:\n\n`10.xxx/yyy, 10.zzz/aaa`\n\nfor batch mode.', {
+          reply_to_message_id: messageId,
+          parse_mode: 'Markdown',
+        });
+      }
     }
 
     // Extract DOI
