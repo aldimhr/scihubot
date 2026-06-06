@@ -5,6 +5,8 @@ const { getFileSize, sizeStatus, formatSize } = require('../utils/pdfSize.js');
 const { sendPDF } = require('../utils/sendPDF.js');
 const { buildCaption } = require('../utils/caption.js');
 const { parseMultipleDois } = require('../utils/parseDoi.js');
+const { isPending, clearPending } = require('../utils/pendingSearch.js');
+const { doSearch } = require('./searchCallback.js');
 const batchDownload = require('./batchDownload.js');
 const ProgressMessage = require('../utils/progress.js');
 
@@ -12,6 +14,17 @@ module.exports = async (ctx) => {
   const message = ctx.message;
   const chat_id = message.chat.id;
   let text = message.text;
+
+  // If user is in pending search mode (tapped "Search Document" button),
+  // treat their message as keyword search input
+  if (isPending(chat_id)) {
+    clearPending(chat_id);
+    const query = text.trim().replace(/\s\s+/g, ' ');
+    if (query.length < 3) {
+      return ctx.reply('🔍 Please enter at least 3 characters to search.').catch(() => {});
+    }
+    return doSearch(ctx, query);
+  }
 
   // Check for multiple DOIs (batch mode)
   // Only if text has separators suggesting multiple DOIs

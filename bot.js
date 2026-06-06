@@ -4,6 +4,7 @@ const http = require('http');
 const { Telegraf } = require('telegraf');
 
 const { adminChatId } = require('./utils/constans.js');
+const { setPending } = require('./utils/pendingSearch.js');
 const { support, search, donation } = require('./actions/menu.js');
 const { broadcast, keyword, status, stats, users, history, ban, unban, mirrors } = require('./actions/command.js');
 const { handleDonateCallback, handleDonateCommand, handlePreCheckout, handleSuccessfulPayment } = require('./actions/donate.js');
@@ -43,11 +44,13 @@ bot.start((ctx) => startAction(ctx));
 bot.help((ctx) => helpAction(ctx));
 
 bot.hears('⚓️ Search Document', (ctx) => {
+  setPending(ctx.chat.id);
   return ctx.reply(
-    '🔍 *Search for papers*\n\nSend me keywords and I\'ll find papers for you.\n\nExamples:\n• `/kw machine learning`\n• `/search neural networks`\n• `/kw CRISPR gene editing 2024`',
-    { parse_mode: 'Markdown', disable_web_page_preview: true }
+    '🔍 *Enter your search keywords:*',
+    { parse_mode: 'Markdown' }
   ).catch(() => {});
 });
+bot.hears('📖 Help', (ctx) => helpAction(ctx));
 bot.hears('💰 Donate', (ctx) => handleDonateCommand(ctx));
 bot.hears('🤠 Support', (ctx) => supportAction(ctx));
 bot.hears('📢 Channel', (ctx) => ctx.reply('📢 Join our channel for updates & new bots:\n\nhttps://t.me/x0projects', { disable_web_page_preview: true }).catch(() => {}));

@@ -42,7 +42,8 @@ exports.keyword = async (ctx) => {
     const message = ctx.message;
     const text = message.text;
 
-    const query = text.split('/kw').join('').trim().replace(/\s\s+/g, ' ');
+    // Strip both /kw and /search command prefixes (with optional @botname)
+    const query = text.replace(/^\/(kw|search)(@\S+)?\s*/i, '').trim().replace(/\s\s+/g, ' ');
 
     if (query.length < 3) {
       return ctx.reply('🔍 Please enter at least 3 characters.\n\nUsage: /kw machine learning').catch(() => {});
