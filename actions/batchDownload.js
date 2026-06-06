@@ -12,7 +12,8 @@
 const { sciHub, downloadFile, downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { buildCaption } = require('../utils/caption.js');
-const { sendPDF, formatSize } = require('../utils/sendPDF.js');
+const { sendPDF } = require('../utils/sendPDF.js');
+const { formatSize } = require('../utils/pdfSize.js');
 const ProgressMessage = require('../utils/progress.js');
 
 const MAX_BATCH = 10;

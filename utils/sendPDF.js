@@ -50,4 +50,4 @@ async function sendPDF(ctx, messageId, fileData, filename, caption, tag = 'SEND'
   }
 }
 
-module.exports = { sendPDF };
+module.exports = { sendPDF, formatSize };
