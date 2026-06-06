@@ -23,14 +23,16 @@ Use /help to see all input examples.
 <code>https://www.nature.com/articles/laban.665</code>
 
 <b>[KEYWORD SEARCH]</b>
-<code>/kw computer science</code>
+<code>/kw machine learning</code>
+<code>/search neural networks</code>
 
 <i>💡 Send a DOI or link and you'll see a paper info card with abstract, authors, and citations before downloading.</i>
+<i>🔍 Search results show paper info with download buttons, pagination, and year filters.</i>
 
 📢 <b>Join <a href="https://t.me/x0projects">@x0projects</a></b> for updates & new bots
   `,
 
-  inputLink: `Please drop a DOI or Publisher URL below, or you can search by keyword by using "/kw" command before the keyword you want to search for. Use the /help command to find out more.`,
+  inputLink: `Please drop a DOI or Publisher URL below, or search by keyword with /kw or /search. Use /help for more examples.`,
 
   donation: `Your support matters. This project survives on the kindness & generosity of your contributions.
 

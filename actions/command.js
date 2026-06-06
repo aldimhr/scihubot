@@ -1,4 +1,5 @@
 const { searchKeyword, notifyAdmin, db, errorHandler, downloadQueue, cache } = require('../utils/index.js');
+const { doSearch } = require('./searchCallback.js');
 const { adminChatId } = require('../utils/constans.js');
 const dataStore = require('../utils/dataStore.js');
 const mirrorDiscovery = require('../utils/mirrorDiscovery.js');
@@ -41,32 +42,20 @@ exports.keyword = async (ctx) => {
     const message = ctx.message;
     const text = message.text;
 
-    const textTarget = text.split('/kw').join('').trim().replace(/\s\s+/g, ' ');
+    const query = text.split('/kw').join('').trim().replace(/\s\s+/g, ' ');
 
-    if (textTarget.length < 5) {
-      return ctx.reply('Please enter the keyword at least 5 letters').catch(() => {});
+    if (query.length < 3) {
+      return ctx.reply('🔍 Please enter at least 3 characters.\n\nUsage: /kw machine learning').catch(() => {});
     }
 
-    if (!isNaN(textTarget)) {
-      return ctx.reply('Please input a keyword not a number').catch(() => {});
+    if (!isNaN(query)) {
+      return ctx.reply('🔍 Please enter keywords, not just a number.').catch(() => {});
     }
 
-    const searchResult = await searchKeyword(textTarget);
-    if (!searchResult) {
-      return ctx.reply("This bot can't read your keywords. This can happen when your keywords are too long.");
-    }
-
-    const resultKeyboard = searchResult.map((item) => [{
-      text: item.title,
-      callback_data: item.externalIds['DOI'],
-    }]);
-
-    return ctx.reply(`Top 10 papers of the keywords entered \n\n<i>Note: not all files below are available in the Sci-Hub database</i>`, {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: resultKeyboard },
-    });
+    await doSearch(ctx, query);
   } catch (err) {
-    errorHandler({ ctx, message: 'bot/action/command()' });
+    console.error('[KW] Error:', err.message);
+    errorHandler({ ctx, message: 'actions/command.js/keyword' });
   }
 };
 

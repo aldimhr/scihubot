@@ -9,6 +9,7 @@ const { broadcast, keyword, status, stats, users, history, ban, unban, mirrors }
 const { handleDonateCallback, handleDonateCommand, handlePreCheckout, handleSuccessfulPayment } = require('./actions/donate.js');
 const callbackQueryAction = require('./actions/callbackQuery.js');
 const downloadCallbackAction = require('./actions/downloadCallback.js');
+const searchCallbackAction = require('./actions/searchCallback.js');
 const textMessageAction = require('./actions/textMessage.js');
 const middlewareAction = require('./actions/middleware.js');
 const linkEntityAction = require('./actions/linkEntity.js');
@@ -42,7 +43,12 @@ bot.use((ctx, next) => middlewareAction(ctx, next));
 bot.start((ctx) => startAction(ctx));
 bot.help((ctx) => helpAction(ctx));
 
-bot.hears('⚓️ Search Document', (ctx) => searchAction(ctx));
+bot.hears('⚓️ Search Document', (ctx) => {
+  return ctx.reply(
+    '🔍 *Search for papers*\n\nSend me keywords and I\'ll find papers for you.\n\nExamples:\n• `/kw machine learning`\n• `/search neural networks`\n• `/kw CRISPR gene editing 2024`',
+    { parse_mode: 'Markdown', disable_web_page_preview: true }
+  ).catch(() => {});
+});
 bot.hears('💰 Donate', (ctx) => handleDonateCommand(ctx));
 bot.hears('🤠 Support', (ctx) => supportAction(ctx));
 bot.hears('📢 Channel', (ctx) => ctx.reply('📢 Join our channel for updates & new bots:\n\nhttps://t.me/x0projects', { disable_web_page_preview: true }).catch(() => {}));
@@ -61,13 +67,12 @@ bot.command('ban', async (ctx) => await ban(ctx));
 bot.command('unban', async (ctx) => await unban(ctx));
 bot.command('mirrors', async (ctx) => await mirrors(ctx));
 
-bot.command('kw', async (ctx) => {
-  ctx.reply('Search for articles based on keywords still under repair');
-});
+bot.command('kw', async (ctx) => await keywordAction(ctx));
+bot.command('search', async (ctx) => await keywordAction(ctx));
 
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => mediaAction(ctx));
 
-// Callback queries — route donate buttons, download buttons, vs keyword search results
+// Callback queries — route donate buttons, download buttons, search, vs keyword search results
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery?.data;
   if (data && data.startsWith('donate_')) {
@@ -75,6 +80,9 @@ bot.on('callback_query', async (ctx) => {
   }
   if (data && data.startsWith('dl:')) {
     return downloadCallbackAction(ctx);
+  }
+  if (data && data.startsWith('sr:')) {
+    return searchCallbackAction(ctx);
   }
   return callbackQueryAction(ctx);
 });
@@ -101,6 +109,7 @@ process.on('uncaughtException', (err) => {
 bot.telegram.setMyCommands([
   { command: 'start', description: '🚀 Start the bot' },
   { command: 'help', description: '📖 How to use this bot' },
+  { command: 'search', description: '🔍 Search papers by keyword' },
   { command: 'donate', description: '⭐ Support with Telegram Stars' },
 ], { scope: { type: 'default' } }).catch(e => console.error('setMyCommands default error:', e.message));
 
