@@ -26,8 +26,14 @@ Use /help to see all input examples.
 <code>/kw machine learning</code>
 <code>/search neural networks</code>
 
+<b>[BATCH MODE]</b> — multiple DOIs at once
+<code>10.1177/193229681300700321, 10.3389/fsurg.2020.593367</code>
+<code>https://doi.org/10.1038/nature12373
+https://doi.org/10.1177/193229681300700321</code>
+
 <i>💡 Send a DOI or link and you'll see a paper info card with abstract, authors, and citations before downloading.</i>
 <i>🔍 Search results show paper info with download buttons, pagination, and year filters.</i>
+<i>📥 Batch mode: send multiple DOIs separated by comma or newline (max 10).</i>
 
 📢 <b>Join <a href="https://t.me/x0projects">@x0projects</a></b> for updates & new bots
   `,
