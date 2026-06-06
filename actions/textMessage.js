@@ -2,7 +2,7 @@ const { sciHub, downloadFile, downloadQueue, cache } = require('../utils/index.j
 const { recordDownload } = require('../utils/dataStore.js');
 const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
 const { getFileSize, sizeStatus } = require('../utils/pdfSize.js');
-const { sendPDF } = require('../utils/sendPDF.js');
+const { sendPDF, formatSize } = require('../utils/sendPDF.js');
 const { buildCaption } = require('../utils/caption.js');
 const ProgressMessage = require('../utils/progress.js');
 
