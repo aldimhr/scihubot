@@ -1,9 +1,9 @@
-const { sciHub, getMetaDOI, downloadFile, citation, errorHandler, downloadQueue, cache } = require('../utils/index.js');
+const { sciHub, getMetaDOI, downloadFile, errorHandler, downloadQueue, cache } = require('../utils/index.js');
 const { isPDF } = require('../utils/isPDF.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
-const { getFileSize, sizeStatus, formatSize, TELEGRAM_MAX_FILE } = require('../utils/pdfSize.js');
-const { splitPDF } = require('../utils/pdfSplitter.js');
+const { getFileSize, sizeStatus } = require('../utils/pdfSize.js');
+const { sendPDF } = require('../utils/sendPDF.js');
 const { buildCaption } = require('../utils/caption.js');
 const ProgressMessage = require('../utils/progress.js');
 const axios = require('axios');
@@ -39,7 +39,7 @@ const downloadPipeline = async ({ url, progress }) => {
 
     await progress(`✅ Downloaded ${(fileData.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
 
-    if (doi) cache.set(doi, fileData);
+    if (doi) await cache.set(doi, fileData);
     return { data: fileData, citation: cit, error: false };
 
   } else {
@@ -56,7 +56,7 @@ const downloadPipeline = async ({ url, progress }) => {
 
     // Check cache
     if (doi) {
-      const cached = cache.get(doi);
+      const cached = await cache.get(doi);
       if (cached) {
         await progress('💾 Found in cache! Sending instantly...');
         return { data: cached, citation: null, error: false, cached: true };
@@ -73,7 +73,7 @@ const downloadPipeline = async ({ url, progress }) => {
 
     await progress(`✅ Downloaded ${(fileData.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
 
-    if (doi) cache.set(doi, fileData);
+    if (doi) await cache.set(doi, fileData);
     return { data: fileData, citation: cit, error: false };
   }
 };
@@ -87,46 +87,6 @@ const checkResponseData = async (url) => {
     return { data: null, error: 'response data is not PDF file' };
   } catch (error) {
     return { data: null, error: 'checkResponseData()' };
-  }
-};
-
-/**
- * Send PDF to user, splitting if it exceeds Telegram's limit.
- */
-const sendPDF = async (ctx, messageId, fileData, filename, caption) => {
-  if (fileData.length <= TELEGRAM_MAX_FILE) {
-    return ctx.replyWithDocument(
-      { source: fileData, filename },
-      { caption, reply_to_message_id: messageId }
-    );
-  }
-
-  // File too large — try splitting
-  console.log(`[LINK] File too large (${formatSize(fileData.length)}), attempting split...`);
-  const baseName = filename.replace('.pdf', '');
-  const { parts, error } = await splitPDF(fileData, baseName);
-
-  if (error || parts.length === 0) {
-    return ctx.reply(
-      `⚠️ PDF is ${formatSize(fileData.length)} — too large for Telegram (max 50 MB) and couldn't split it.\n\nTry downloading directly from the DOI link.`,
-      { reply_to_message_id: messageId }
-    );
-  }
-
-  // Send each part
-  await ctx.reply(
-    `📦 PDF split into ${parts.length} parts (${formatSize(fileData.length)} total)`,
-    { reply_to_message_id: messageId }
-  );
-
-  for (const part of parts) {
-    await ctx.replyWithDocument(
-      { source: part.data, filename: part.filename },
-      {
-        caption: `📄 Part ${part.index}/${parts.length} (pages ${part.pages})`,
-        reply_to_message_id: messageId,
-      }
-    ).catch(e => console.error(`[LINK] Failed to send part ${part.index}:`, e.message));
   }
 };
 
@@ -216,7 +176,7 @@ module.exports = async (ctx) => {
     recordDownload({ userId: ctx.message?.from?.id, doi: text, success: true, cached: result.cached });
 
     const caption = buildCaption(result.citation, { cached: result.cached });
-    await sendPDF(ctx, messageId, result.data, filename, caption);
+    await sendPDF(ctx, messageId, result.data, filename, caption, 'LINK');
     console.log('[LINK] PDF sent successfully');
   } catch (err) {
     console.error('[LINK] Unhandled error:', err.message);

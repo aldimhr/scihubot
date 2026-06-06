@@ -7,7 +7,6 @@ const { adminChatId } = require('./utils/constans.js');
 const { support, search, donation } = require('./actions/menu.js');
 const { broadcast, keyword, status, stats, users, history, ban, unban, mirrors } = require('./actions/command.js');
 const { handleDonateCallback, handleDonateCommand, handlePreCheckout, handleSuccessfulPayment } = require('./actions/donate.js');
-const callbackQueryAction = require('./actions/callbackQuery.js');
 const downloadCallbackAction = require('./actions/downloadCallback.js');
 const searchCallbackAction = require('./actions/searchCallback.js');
 const textMessageAction = require('./actions/textMessage.js');
@@ -72,7 +71,7 @@ bot.command('search', async (ctx) => await keywordAction(ctx));
 
 bot.on(['photo', 'document', 'voice', 'sticker'], (ctx) => mediaAction(ctx));
 
-// Callback queries — route donate buttons, download buttons, search, vs keyword search results
+// Callback queries — route donate buttons, download buttons, search results
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery?.data;
   if (data && data.startsWith('donate_')) {
@@ -84,7 +83,7 @@ bot.on('callback_query', async (ctx) => {
   if (data && data.startsWith('sr:')) {
     return searchCallbackAction(ctx);
   }
-  return callbackQueryAction(ctx);
+  console.log('[CB] Unhandled callback:', data);
 });
 
 bot.entity(['url', 'text_link'], async (ctx) => await linkEntityAction(ctx));
