@@ -8,6 +8,7 @@ const searchKeyword = require('./keyword.js');
 const sciHub = require('./sciHub.js');
 const downloadQueue = require('./downloadQueue.js');
 const cache = require('./cache.js');
+const { fallbackChain, buildNotFoundKeyboard } = require('./fallbackChain.js');
 
 var HTMLParser = require('node-html-parser');
 
@@ -261,4 +262,5 @@ function normalizeDOI(doi) {
 module.exports = {
   searchKeyword, downloadFile, errorHandler, notifyAdmin, getMetaDOI,
   citation, contants, sciHub, db, downloadQueue, cache,
+  fallbackChain, buildNotFoundKeyboard,
 };
