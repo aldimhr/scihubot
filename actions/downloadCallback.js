@@ -73,11 +73,13 @@ module.exports = async (ctx) => {
     // Build smart redirect keyboard
     const keyboard = buildNotFoundKeyboard(doi, paperTitle, result.landingPages || []);
 
+    // Different message based on whether Sci-Hub has it or not
+    const headline = result.sciHubNotFound
+      ? '❌ *Paper not available*\n\nThis paper is not in Sci-Hub\'s database and no free PDF was found online.'
+      : '❌ *PDF not available*\n\nCouldn\'t find a free PDF for this paper.';
+
     await ctx.telegram.editMessageText(chatId, messageId, null,
-      '❌ *PDF not available*\n\n' +
-      'Couldn\'t find a free PDF for this paper.\n\n' +
-      '🏷️ `' + doi + '`\n\n' +
-      'Try one of these:',
+      headline + '\n\n🏷️ `' + doi + '`\n\nTry one of these:',
       {
         parse_mode: 'Markdown',
         reply_markup: keyboard,

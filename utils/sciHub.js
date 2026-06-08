@@ -31,8 +31,17 @@ module.exports = async (doi) => {
       const document = HTMLParser.parse(response.data);
       const pageTitle = document.querySelector('title')?.text || '';
 
-      // Check if Sci-Hub returned a "not found" page
-      if (pageTitle.toLowerCase().includes('error') || pageTitle.toLowerCase().includes('not found')) {
+      // Check if Sci-Hub returned a "not found" / error page
+      // Sci-Hub uses various languages: English, Russian, Chinese
+      const titleLower = pageTitle.toLowerCase();
+      const isNotFound = titleLower.includes('error') ||
+                         titleLower.includes('not found') ||
+                         titleLower.includes('отсутствует') ||     // Russian: "absent/missing"
+                         titleLower.includes('статья удалена') ||  // Russian: "article removed"
+                         titleLower.includes('не найден') ||       // Russian: "not found"
+                         titleLower.includes('文章不存在');          // Chinese: "article doesn't exist"
+      if (isNotFound) {
+        console.log(`[SCIHUB] ${mirror} → paper not in database (title: "${pageTitle}")`);
         continue; // try next mirror
       }
 
@@ -103,11 +112,15 @@ module.exports = async (doi) => {
     }
   }
 
-  // All mirrors failed
+  // All mirrors failed — check if it was "not found" or actual errors
   errorHandler({ err: new Error('All mirrors failed'), name: 'helpers/sciHub.js' });
+
+  // If we saw "not found" pages, the paper genuinely isn't on Sci-Hub
+  // (vs. network errors which mean we couldn't reach any mirror)
   return {
     data: null,
     citation: null,
-    error: errMessage,
+    error: 'not-found',  // distinct from network errors
+    notOnSciHub: true,
   };
 };

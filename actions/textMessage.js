@@ -117,10 +117,13 @@ module.exports = async (ctx) => {
     console.log('[TEXT] Error:', result.error);
     recordDownload({ userId: message.from?.id, doi: normalizedDOI, success: false, error: result.error });
 
-    // Show smart redirect buttons instead of plain error
+    // Show smart redirect buttons with context-aware message
     const keyboard = buildNotFoundKeyboard(normalizedDOI, '', result.landingPages || []);
+    const headline = result.sciHubNotFound
+      ? '❌ *Paper not available*\n\nThis paper is not in Sci-Hub\'s database and no free PDF was found online.'
+      : '❌ *PDF not available*\n\nCouldn\'t find a free PDF for this paper.';
     return ctx.reply(
-      '❌ *PDF not available*\n\nCouldn\'t find a free PDF for this paper.\n\n🏷️ `' + normalizedDOI + '`\n\nTry one of these:',
+      headline + '\n\n🏷️ `' + normalizedDOI + '`\n\nTry one of these:',
       {
         parse_mode: 'Markdown',
         reply_markup: keyboard,

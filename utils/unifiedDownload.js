@@ -16,7 +16,8 @@ const sciHub = require('./sciHub.js');
 const downloadFile = require('./downloadFile.js');
 
 const PER_SOURCE_TIMEOUT = 20000; // 20s max per source download
-const LOOKUP_TIMEOUT = 12000;     // 12s max per source lookup
+const LOOKUP_TIMEOUT = 12000;     // 12s max per source lookup (API calls)
+const SCIHUB_TIMEOUT = 60000;     // 60s for Sci-Hub (tries multiple mirrors sequentially)
 
 /**
  * Try to download a PDF from a URL with timeout.
@@ -41,14 +42,15 @@ async function downloadWithTimeout(url, source) {
  * @param {Function} lookupFn - async () => { url, source, error }
  * @param {string} label - Human label for logging/progress
  * @param {Function} progressCb
+ * @param {number} timeout - Custom timeout in ms (default LOOKUP_TIMEOUT)
  * @returns {Promise<{data: Buffer|null, source: string|null, url: string|null, error: string|null}>}
  */
-async function trySource(lookupFn, label, progressCb) {
+async function trySource(lookupFn, label, progressCb, timeout = LOOKUP_TIMEOUT) {
   try {
     const lookup = await Promise.race([
       lookupFn(),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`${label} lookup timeout`)), LOOKUP_TIMEOUT)
+        setTimeout(() => reject(new Error(`${label} lookup timeout`)), timeout)
       ),
     ]);
 
@@ -84,7 +86,7 @@ async function downloadFromAnySource(doiURL, doi, title, progressCb = () => {}) 
 
   // Race all sources in parallel
   const sources = [
-    // Sci-Hub (main source for paywalled papers)
+    // Sci-Hub (main source for paywalled papers — needs longer timeout for mirror rotation)
     (async () => {
       let shResult = null;
       const result = await trySource(
@@ -95,7 +97,8 @@ async function downloadFromAnySource(doiURL, doi, title, progressCb = () => {}) 
           return { url: sh.data, source: 'Sci-Hub', error: null };
         },
         'Sci-Hub',
-        progressCb
+        progressCb,
+        SCIHUB_TIMEOUT  // longer timeout — Sci-Hub tries mirrors sequentially
       );
       // Attach citation from Sci-Hub if available
       if (result.data && shResult?.citation) {
@@ -142,6 +145,7 @@ async function downloadFromAnySource(doiURL, doi, title, progressCb = () => {}) 
   const results = await Promise.allSettled(sources);
 
   let winner = null;
+  let sciHubNotFound = false;
   const landingPages = [];
 
   for (const r of results) {
@@ -152,6 +156,11 @@ async function downloadFromAnySource(doiURL, doi, title, progressCb = () => {}) 
     if (val.landingPage) {
       const label = val.source || 'Publisher';
       landingPages.push({ url: val.landingPage, label });
+    }
+
+    // Track if Sci-Hub explicitly said "not in database"
+    if (val.error === 'not-found') {
+      sciHubNotFound = true;
     }
 
     // First valid PDF wins
@@ -175,6 +184,7 @@ async function downloadFromAnySource(doiURL, doi, title, progressCb = () => {}) 
     source: null,
     citation: null,
     landingPages,
+    sciHubNotFound,  // true if Sci-Hub explicitly doesn't have this paper
     error: 'Not found in any source',
   };
 }
