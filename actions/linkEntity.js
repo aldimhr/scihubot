@@ -1,4 +1,4 @@
-const { sciHub, getMetaDOI, downloadFile, errorHandler, downloadQueue, cache } = require('../utils/index.js');
+const { sciHub, getMetaDOI, downloadQueue, cache } = require('../utils/index.js');
 const { isPDF } = require('../utils/isPDF.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
@@ -6,6 +6,7 @@ const { getFileSize, sizeStatus } = require('../utils/pdfSize.js');
 const { sendPDF } = require('../utils/sendPDF.js');
 const { buildCaption } = require('../utils/caption.js');
 const { parseDoisFromEntities } = require('../utils/parseDoi.js');
+const { downloadFromAnySource, buildNotFoundKeyboard } = require('../utils/unifiedDownload.js');
 const batchDownload = require('./batchDownload.js');
 const ProgressMessage = require('../utils/progress.js');
 const axios = require('axios');
@@ -20,7 +21,7 @@ const checkInputText = (text) => {
 };
 
 /**
- * Full download pipeline: extract DOI → check cache → Sci-Hub → download → cache.
+ * Full download pipeline: extract DOI → check cache → unified parallel download → cache.
  * @param {Function} progress - async (text) => void, updates the progress message
  */
 const downloadPipeline = async ({ url, progress }) => {
@@ -31,19 +32,6 @@ const downloadPipeline = async ({ url, progress }) => {
     const doiMatch = url.match(/doi\.org\/(.+)/);
     if (doiMatch) doi = doiMatch[1].replace(/\/+$/, '');
 
-    await progress('🔍 Searching Sci-Hub for your paper...');
-    const { data, citation: cit, error } = await sciHub(url);
-    if (error) return { data: null, citation: null, error };
-
-    await progress('📄 Found! Downloading PDF...');
-    const { data: fileData, error: dlError } = await downloadFile(data);
-    if (dlError) return { data: null, citation: null, error: dlError };
-
-    await progress(`✅ Downloaded ${(fileData.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
-
-    if (doi) await cache.set(doi, fileData);
-    return { data: fileData, citation: cit, error: false };
-
   } else {
     // Publisher URL — extract DOI first
     await progress('🔍 Extracting DOI from publisher page...');
@@ -53,31 +41,23 @@ const downloadPipeline = async ({ url, progress }) => {
       const { data: responseData, error: responseError } = await checkResponseData(url);
       return { data: responseData, citation: null, error: responseError };
     }
-
     doi = metaDOI ? metaDOI.replace(/https?:\/\/doi\.org\//, '').replace(/\/+$/, '') : null;
-
-    // Check cache
-    if (doi) {
-      const cached = await cache.get(doi);
-      if (cached) {
-        await progress('💾 Found in cache! Sending instantly...');
-        return { data: cached, citation: null, error: false, cached: true };
-      }
-    }
-
-    await progress('🔍 Searching Sci-Hub for your paper...');
-    const { data, citation: cit, error } = await sciHub(metaDOI);
-    if (error) return { data: null, citation: null, error };
-
-    await progress('📄 Found! Downloading PDF...');
-    const { data: fileData, error: dlError } = await downloadFile(data);
-    if (dlError) return { data: null, citation: null, error: dlError };
-
-    await progress(`✅ Downloaded ${(fileData.length / 1024 / 1024).toFixed(1)}MB. Sending...`);
-
-    if (doi) await cache.set(doi, fileData);
-    return { data: fileData, citation: cit, error: false };
   }
+
+  // Check cache
+  if (doi) {
+    const cached = await cache.get(doi);
+    if (cached) {
+      await progress('💾 Found in cache! Sending instantly...');
+      return { data: cached, citation: null, source: 'cache', error: false };
+    }
+  }
+
+  // Unified parallel download (Sci-Hub + Unpaywall + CrossRef + Preprints)
+  const doiURL = doi ? `https://doi.org/${doi}` : url;
+  return downloadFromAnySource(doiURL, doi || '', '', async (text) => {
+    await progress(text);
+  });
 };
 
 const checkResponseData = async (url) => {
@@ -177,17 +157,28 @@ module.exports = async (ctx) => {
     if (result.error || !result.data) {
       console.log('[LINK] Error or no file:', result.error);
       recordDownload({ userId: ctx.message?.from?.id, doi: text, success: false, error: result.error });
-      return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-        reply_to_message_id: messageId,
-      });
+
+      // Show smart redirect buttons instead of plain error
+      const keyboard = buildNotFoundKeyboard(doi || text, '', result.landingPages || []);
+      return ctx.reply(
+        '❌ *PDF not available*\n\nCouldn\'t find a free PDF for this paper.\n\nTry one of these:',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard,
+          reply_to_message_id: messageId,
+          disable_web_page_preview: true,
+        }
+      );
     }
 
     console.log('[LINK] Sending PDF document...');
     const filename = text.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
 
-    recordDownload({ userId: ctx.message?.from?.id, doi: text, success: true, cached: result.cached });
+    const source = result.source || 'unknown';
+    recordDownload({ userId: ctx.message?.from?.id, doi: text, success: true, source });
 
-    const caption = buildCaption(result.citation, { cached: result.cached });
+    const sourceLabel = (result.source && result.source !== 'Sci-Hub' && result.source !== 'cache') ? ` via ${result.source}` : '';
+    const caption = buildCaption(result.citation, { cached: false }) + sourceLabel;
     await sendPDF(ctx, messageId, result.data, filename, caption, 'LINK');
     console.log('[LINK] PDF sent successfully');
   } catch (err) {

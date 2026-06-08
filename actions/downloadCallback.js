@@ -1,9 +1,9 @@
-const { sciHub, downloadFile, downloadQueue, cache } = require('../utils/index.js');
+const { downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { buildCaption } = require('../utils/caption.js');
 const { sendPDF } = require('../utils/sendPDF.js');
 const { formatSize } = require('../utils/pdfSize.js');
-const { fallbackChain, buildNotFoundKeyboard } = require('../utils/fallbackChain.js');
+const { downloadFromAnySource, buildNotFoundKeyboard } = require('../utils/unifiedDownload.js');
 const { fetchMeta } = require('../utils/paperMeta.js');
 
 /**
@@ -48,54 +48,18 @@ module.exports = async (ctx) => {
     return;
   }
 
-  // Fetch paper title for fallback search (arXiv title search)
+  // Fetch paper title (for preprint search + smart buttons)
   let paperTitle = '';
   const { meta } = await fetchMeta(doi);
   if (meta?.title) paperTitle = meta.title;
 
-  // Download through queue
+  // Download through queue — unified parallel download
   const result = await downloadQueue.enqueue(
     async () => {
-      // ── Step 1: Try Sci-Hub ──
-      await editProgress('🔍 Searching Sci-Hub...');
       const doiURL = `https://doi.org/${doi}`;
-      const { data: scihubData, citation: cit, error: scihubError } = await sciHub(doiURL);
-
-      if (!scihubError && scihubData) {
-        await editProgress('📄 Found on Sci-Hub! Downloading PDF...');
-        const { data: fileData, error: dlError } = await downloadFile(scihubData);
-        if (!dlError && fileData) {
-          await editProgress(`✅ Downloaded ${formatSize(fileData.length)}. Sending...`);
-          await cache.set(doi, fileData);
-          return { data: fileData, citation: cit, source: 'Sci-Hub', error: false };
-        }
-      }
-
-      // ── Step 2: Sci-Hub failed — run fallback chain ──
-      console.log(`[DL-CB] Sci-Hub miss for ${doi}, running fallback chain...`);
-      const fallbackResult = await fallbackChain(doi, paperTitle, async (text) => {
+      return downloadFromAnySource(doiURL, doi, paperTitle, async (text) => {
         await editProgress(text);
       });
-
-      if (fallbackResult.data) {
-        await editProgress(`✅ Downloaded from ${fallbackResult.source}! Sending...`);
-        await cache.set(doi, fallbackResult.data);
-        return {
-          data: fallbackResult.data,
-          citation: cit || `📄 ${doi}`,
-          source: fallbackResult.source,
-          error: false,
-        };
-      }
-
-      // ── Step 3: All sources failed ──
-      return {
-        data: null,
-        citation: null,
-        source: null,
-        landingPages: fallbackResult.landingPages || [],
-        error: 'Not found in any source',
-      };
     },
     async (position, total) => {
       await editProgress(`⏳ Queue position #${position}...`);
@@ -110,10 +74,10 @@ module.exports = async (ctx) => {
     const keyboard = buildNotFoundKeyboard(doi, paperTitle, result.landingPages || []);
 
     await ctx.telegram.editMessageText(chatId, messageId, null,
-      `❌ *PDF not available*\n\n` +
-      `Couldn't find a free PDF for this paper.\n\n` +
+      '❌ *PDF not available*\n\n' +
+      'Couldn\'t find a free PDF for this paper.\n\n' +
       '🏷️ `' + doi + '`\n\n' +
-      `Try one of these:`,
+      'Try one of these:',
       {
         parse_mode: 'Markdown',
         reply_markup: keyboard,

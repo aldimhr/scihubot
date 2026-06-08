@@ -1,4 +1,4 @@
-const { sciHub, downloadFile, downloadQueue, cache } = require('../utils/index.js');
+const { sciHub, downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { fetchMeta, formatCard, buildKeyboard } = require('../utils/paperMeta.js');
 const { getFileSize, sizeStatus, formatSize } = require('../utils/pdfSize.js');
@@ -7,6 +7,7 @@ const { buildCaption } = require('../utils/caption.js');
 const { parseMultipleDois } = require('../utils/parseDoi.js');
 const { isPending, clearPending } = require('../utils/pendingSearch.js');
 const { doSearch } = require('./searchCallback.js');
+const { downloadFromAnySource, buildNotFoundKeyboard } = require('../utils/unifiedDownload.js');
 const batchDownload = require('./batchDownload.js');
 const ProgressMessage = require('../utils/progress.js');
 
@@ -83,7 +84,7 @@ module.exports = async (ctx) => {
     });
   }
 
-  // Fallback: no metadata — direct download (original behavior)
+  // Fallback: no metadata — download using unified parallel approach
 
   // Create progress message
   const progress = new ProgressMessage(ctx, chat_id, message.message_id);
@@ -96,23 +97,12 @@ module.exports = async (ctx) => {
       const cached = await cache.get(normalizedDOI);
       if (cached) {
         await progress.update('💾 Found in cache! Sending instantly...');
-        return { data: cached, citation: null, error: false, cached: true };
+        return { data: cached, citation: null, source: 'cache', error: false };
       }
 
-      await progress.update('🔍 Searching Sci-Hub for your paper...');
-      const { data: scihubData, citation: scihubCitation, error: scihubError } = await sciHub(doiURL);
-      if (scihubError) return { data: null, citation: null, error: scihubError };
-
-      await progress.update('📄 Found! Downloading PDF...');
-      const dFile = await downloadFile(scihubData);
-      if (dFile.error) return { data: null, citation: null, error: dFile.error };
-
-      await progress.update(`✅ Downloaded ${formatSize(dFile.data.length)}. Sending...`);
-
-      // Cache it
-      await cache.set(normalizedDOI, dFile.data);
-
-      return { data: dFile.data, citation: scihubCitation, error: false };
+      return downloadFromAnySource(doiURL, normalizedDOI, '', async (text) => {
+        await progress.update(text);
+      });
     },
     async (position, total) => {
       console.log(`[TEXT] Queued: position ${position}/${total}`);
@@ -126,15 +116,26 @@ module.exports = async (ctx) => {
   if (result.error || !result.data) {
     console.log('[TEXT] Error:', result.error);
     recordDownload({ userId: message.from?.id, doi: normalizedDOI, success: false, error: result.error });
-    return ctx.reply("Unfortunately, Sci-Hub doesn't have the requested document :-(", {
-      reply_to_message_id: message.message_id,
-    });
+
+    // Show smart redirect buttons instead of plain error
+    const keyboard = buildNotFoundKeyboard(normalizedDOI, '', result.landingPages || []);
+    return ctx.reply(
+      '❌ *PDF not available*\n\nCouldn\'t find a free PDF for this paper.\n\n🏷️ `' + normalizedDOI + '`\n\nTry one of these:',
+      {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+        reply_to_message_id: message.message_id,
+        disable_web_page_preview: true,
+      }
+    );
   }
 
   console.log('[TEXT] Sending PDF document...');
-  recordDownload({ userId: message.from?.id, doi: normalizedDOI, success: true, cached: result.cached });
+  const source = result.source || 'unknown';
+  recordDownload({ userId: message.from?.id, doi: normalizedDOI, success: true, cached: false, source });
 
   const filename = `${normalizedDOI.replace(/\//g, '_')}.pdf`;
-  const caption = buildCaption(result.citation, { cached: result.cached });
+  const sourceLabel = source === 'Sci-Hub' || source === 'cache' ? '' : ` via ${source}`;
+  const caption = buildCaption(result.citation, { cached: false }) + sourceLabel;
   await sendPDF(ctx, message.message_id, result.data, filename, caption, 'TEXT');
 };

@@ -4,17 +4,17 @@
  * Flow:
  *   1. Parse all DOIs from message
  *   2. Send summary card with count
- *   3. Queue each DOI through download pipeline (Sci-Hub → fallback chain)
+ *   3. Queue each DOI through unified parallel download pipeline
  *   4. Send each PDF as it completes with "1/N" progress
  *   5. Final summary: successes + failures
  */
 
-const { sciHub, downloadFile, downloadQueue, cache } = require('../utils/index.js');
+const { downloadQueue, cache } = require('../utils/index.js');
 const { recordDownload } = require('../utils/dataStore.js');
 const { buildCaption } = require('../utils/caption.js');
 const { sendPDF } = require('../utils/sendPDF.js');
 const { formatSize } = require('../utils/pdfSize.js');
-const { fallbackChain } = require('../utils/fallbackChain.js');
+const { downloadFromAnySource } = require('../utils/unifiedDownload.js');
 const { fetchMeta } = require('../utils/paperMeta.js');
 const ProgressMessage = require('../utils/progress.js');
 
@@ -60,48 +60,29 @@ async function batchDownload(ctx, dois, chatId, replyToMsgId) {
         continue;
       }
 
-      // Fetch title for fallback search
+      // Fetch title for preprint search
       let paperTitle = '';
       const { meta } = await fetchMeta(doi);
       if (meta?.title) paperTitle = meta.title;
 
-      // ── Step 1: Try Sci-Hub ──
-      await progress.update(`🔍 ${num}/${total} — Searching Sci-Hub for ${doi}...`);
+      // Unified parallel download (Sci-Hub + Unpaywall + CrossRef + Preprints)
+      await progress.update(`🔍 ${num}/${total} — Searching all sources for ${doi}...`);
       const doiURL = `http://doi.org/${doi}`;
-      const { data: scihubUrl, citation, error: scihubError } = await sciHub(doiURL);
+      const result = await downloadFromAnySource(doiURL, doi, paperTitle);
 
-      if (!scihubError && scihubUrl) {
-        await progress.update(`📄 ${num}/${total} — Downloading from Sci-Hub...`);
-        const { data: fileData, error: dlError } = await downloadFile(scihubUrl);
-
-        if (!dlError && fileData) {
-          await cache.set(doi, fileData);
-          await progress.update(`✅ ${num}/${total} — Sending ${formatSize(fileData.length)}...`);
-          const filename = doi.replace(/\//g, '_') + '.pdf';
-          const caption = buildCaption(citation, { cached: false });
-          await sendPDF(ctx, replyToMsgId, fileData, filename, caption, 'BATCH');
-          results.success.push({ doi, source: 'Sci-Hub' });
-          recordDownload({ userId: chatId, doi, success: true });
-          continue;
-        }
-      }
-
-      // ── Step 2: Sci-Hub failed — run fallback chain ──
-      await progress.update(`🔄 ${num}/${total} — Trying free sources for ${doi}...`);
-      const fallbackResult = await fallbackChain(doi, paperTitle);
-
-      if (fallbackResult.data) {
-        await cache.set(doi, fallbackResult.data);
-        await progress.update(`✅ ${num}/${total} — Found via ${fallbackResult.source}! Sending...`);
+      if (result.data) {
+        await cache.set(doi, result.data);
+        const sizeStr = formatSize(result.data.length);
+        await progress.update(`✅ ${num}/${total} — Found via ${result.source}! Sending ${sizeStr}...`);
         const filename = doi.replace(/\//g, '_') + '.pdf';
-        const caption = buildCaption(citation, { cached: false }) + ` via ${fallbackResult.source}`;
-        await sendPDF(ctx, replyToMsgId, fallbackResult.data, filename, caption, 'BATCH');
-        results.success.push({ doi, source: fallbackResult.source });
-        recordDownload({ userId: chatId, doi, success: true, source: fallbackResult.source });
+        const caption = buildCaption(result.citation, { cached: false }) + ` via ${result.source}`;
+        await sendPDF(ctx, replyToMsgId, result.data, filename, caption, 'BATCH');
+        results.success.push({ doi, source: result.source });
+        recordDownload({ userId: chatId, doi, success: true, source: result.source });
         continue;
       }
 
-      // ── All sources failed ──
+      // All sources failed
       results.failed.push({ doi, reason: 'Not found in any source' });
       recordDownload({ userId: chatId, doi, success: false, error: 'not-found-all-sources' });
 
