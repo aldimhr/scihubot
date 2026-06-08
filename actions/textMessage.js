@@ -59,6 +59,9 @@ module.exports = async (ctx) => {
   const normalizedDOI = doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '').replace(/\/+$/, '');
   const doiURL = `http://doi.org/${normalizedDOI}`;
 
+  // Show loading indicator immediately
+  const loadingMsg = await ctx.reply('🔍 Searching...').catch(() => null);
+
   // Try to show info card first
   const { meta } = await fetchMeta(normalizedDOI);
   if (meta) {
@@ -77,17 +80,34 @@ module.exports = async (ctx) => {
 
     const card = formatCard(meta, sizeInfo);
     const keyboard = buildKeyboard(normalizedDOI, sizeInfo?.tooLarge || false);
-    return ctx.reply(card, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard,
-      disable_web_page_preview: true,
-    });
+
+    // Replace loading message with info card
+    if (loadingMsg) {
+      await ctx.telegram.editMessageText(chat_id, loadingMsg.message_id, null, card, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+        disable_web_page_preview: true,
+      }).catch(() => ctx.reply(card, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+        disable_web_page_preview: true,
+      }));
+    } else {
+      await ctx.reply(card, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+        disable_web_page_preview: true,
+      });
+    }
+    return;
   }
 
   // Fallback: no metadata — download using unified parallel approach
 
-  // Create progress message
-  const progress = new ProgressMessage(ctx, chat_id, message.message_id);
+  // Reuse loading message or create progress message
+  const progress = loadingMsg
+    ? new ProgressMessage(ctx, chat_id, message.message_id, loadingMsg.message_id)
+    : new ProgressMessage(ctx, chat_id, message.message_id);
   await progress.update('🕵️ Starting download...');
 
   // Run download through queue

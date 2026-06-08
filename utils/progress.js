@@ -9,11 +9,17 @@
  */
 
 class ProgressMessage {
-  constructor(ctx, chatId, replyToId) {
+  /**
+   * @param {Object} ctx - Telegraf context
+   * @param {number} chatId
+   * @param {number} replyToId - Message to reply to
+   * @param {number|null} existingMessageId - Reuse an existing message instead of creating new
+   */
+  constructor(ctx, chatId, replyToId, existingMessageId = null) {
     this.ctx = ctx;
     this.chatId = chatId;
     this.replyToId = replyToId;
-    this.messageId = null;
+    this.messageId = existingMessageId || null;
     this.currentText = '';
   }
 

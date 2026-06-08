@@ -104,6 +104,9 @@ module.exports = async (ctx) => {
       if (doiMatch) doi = doiMatch[1].replace(/\/+$/, '');
     }
 
+    // Show loading indicator immediately
+    const loadingMsg = await ctx.reply('🔍 Searching...').catch(() => null);
+
     // If no DOI from URL, try publisher extraction
     if (!doi) {
       const { data: metaDOI } = await getMetaDOI(text);
@@ -131,17 +134,35 @@ module.exports = async (ctx) => {
 
         const card = formatCard(meta, sizeInfo);
         const keyboard = buildKeyboard(doi, sizeInfo?.tooLarge || false);
-        return ctx.reply(card, {
-          parse_mode: 'Markdown',
-          reply_markup: keyboard,
-          reply_to_message_id: messageId,
-          disable_web_page_preview: true,
-        });
+
+        // Replace loading message with info card
+        if (loadingMsg) {
+          await ctx.telegram.editMessageText(chatId, loadingMsg.message_id, null, card, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard,
+            disable_web_page_preview: true,
+          }).catch(() => ctx.reply(card, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard,
+            reply_to_message_id: messageId,
+            disable_web_page_preview: true,
+          }));
+        } else {
+          await ctx.reply(card, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard,
+            reply_to_message_id: messageId,
+            disable_web_page_preview: true,
+          });
+        }
+        return;
       }
     }
 
     // Fallback: no DOI or no metadata — direct download (original behavior)
-    const progress = new ProgressMessage(ctx, chatId, messageId);
+    const progress = loadingMsg
+      ? new ProgressMessage(ctx, chatId, messageId, loadingMsg.message_id)
+      : new ProgressMessage(ctx, chatId, messageId);
     await progress.update('🕵️ Starting download...');
 
     const result = await downloadQueue.enqueue(
